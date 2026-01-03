@@ -1,0 +1,4582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>严论阅读器 - 全能阅读伴侣</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <!-- 添加的文件解析库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.88/dist/epub.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <style>
+        :root {
+            /* 主题变量 */
+            --primary-bg: #f8f4e9;
+            --secondary-bg: #f0ebdd;
+            --accent-color: #d4b996;
+            --text-color: #5a4c3a;
+            --light-text: #8a7b68;
+            --border-color: #e0d6c2;
+            --shadow: 0 4px 12px rgba(90, 76, 58, 0.08);
+            
+            /* 复古羊皮纸主题 */
+            --parchment-bg: #f5eedf;
+            --parchment-secondary: #ede4d3;
+            --parchment-accent: #c9b18b;
+            --parchment-text: #5d4c3d;
+            
+            /* 浅色纸张主题 */
+            --paper-bg: #fefefe;
+            --paper-secondary: #f5f5f5;
+            --paper-accent: #a3c1da;
+            --paper-text: #333333;
+            
+            /* 夜间模式 */
+            --dark-bg: #1a1a1a;
+            --dark-secondary: #2a2a2a;
+            --dark-accent: #4a7b9d;
+            --dark-text: #cccccc;
+            
+            /* 字体变量 */
+            --serif-font: 'Noto Serif SC', serif;
+            --sans-font: 'Noto Sans SC', sans-serif;
+            
+            /* 布局变量 */
+            --sidebar-width: 300px;
+            --header-height: 70px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body {
+            font-family: var(--serif-font);
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* 头部样式 */
+        .app-header {
+            height: var(--header-height);
+            background-color: var(--secondary-bg);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 25px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            color: var(--text-color);
+        }
+        
+        .logo-icon {
+            color: var(--accent-color);
+            font-size: 1.8rem;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .header-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 8px 15px;
+            border-radius: 6px;
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .header-btn:hover {
+            background-color: rgba(212, 185, 150, 0.1);
+        }
+        
+        .upload-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+        }
+        
+        .upload-btn:hover {
+            background-color: var(--text-color);
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--secondary-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 25px;
+            overflow-y: auto;
+            height: calc(100vh - var(--header-height));
+            position: sticky;
+            top: var(--header-height);
+            left: 0;
+            transition: transform 0.3s;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+        
+        .sidebar-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--light-text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* 书签列表 */
+        .bookmark-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .bookmark-item {
+            padding: 10px 15px;
+            background-color: var(--primary-bg);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--accent-color);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bookmark-item:hover {
+            background-color: rgba(212, 185, 150, 0.1);
+        }
+        
+        .bookmark-delete {
+            color: var(--light-text);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 3px;
+        }
+        
+        .bookmark-delete:hover {
+            background-color: rgba(212, 185, 150, 0.2);
+        }
+        
+        /* 文件列表 */
+        .file-list {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            padding: 10px 15px;
+            background-color: var(--primary-bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .file-item:hover {
+            background-color: rgba(212, 185, 150, 0.1);
+        }
+        
+        .file-item.active {
+            border-left: 3px solid var(--accent-color);
+            background-color: rgba(212, 185, 150, 0.1);
+        }
+        
+        .file-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        
+        .file-close {
+            color: var(--light-text);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 3px;
+            margin-left: 10px;
+        }
+        
+        .file-close:hover {
+            background-color: rgba(212, 185, 150, 0.2);
+        }
+        
+        /* 阅读进度 */
+        .progress-section {
+            margin-bottom: 20px;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background-color: var(--primary-bg);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--accent-color);
+            width: 0%;
+            transition: width 0.5s;
+        }
+        
+        .reading-time {
+            font-size: 0.9rem;
+            color: var(--light-text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 阅读器区域 */
+        .reader-container {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            height: calc(100vh - var(--header-height));
+            position: relative;
+        }
+        
+        .empty-reader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--light-text);
+            text-align: center;
+        }
+        
+        .empty-reader i {
+            font-size: 5rem;
+            margin-bottom: 25px;
+            color: var(--border-color);
+        }
+        
+        .empty-reader h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+        
+        .empty-reader p {
+            max-width: 500px;
+            line-height: 1.8;
+            margin-bottom: 25px;
+        }
+        
+        /* 文章内容 */
+        .article-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-bottom: 50px;
+        }
+        
+        .article-title {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--accent-color);
+            color: var(--text-color);
+            font-weight: 300;
+            line-height: 1.3;
+        }
+        
+        .article-body {
+            font-size: 1.1rem;
+            line-height: var(--line-height, 1.8);
+        }
+        
+        .article-body h1, 
+        .article-body h2, 
+        .article-body h3 {
+            margin: 30px 0 20px;
+            color: var(--text-color);
+            font-weight: 400;
+        }
+        
+        .article-body h1 {
+            font-size: 1.8rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .article-body h2 {
+            font-size: 1.6rem;
+        }
+        
+        .article-body h3 {
+            font-size: 1.4rem;
+        }
+        
+        .article-body p {
+            margin-bottom: 25px;
+            text-align: justify;
+        }
+        
+        .article-body blockquote {
+            border-left: 4px solid var(--accent-color);
+            padding-left: 25px;
+            margin: 25px 0;
+            color: var(--light-text);
+            font-style: italic;
+        }
+        
+        .article-body pre {
+            background-color: var(--primary-bg);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 25px 0;
+            border: 1px solid var(--border-color);
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+        
+        .article-body code {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(212, 185, 150, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .article-body ul, 
+        .article-body ol {
+            margin-left: 30px;
+            margin-bottom: 25px;
+        }
+        
+        .article-body li {
+            margin-bottom: 10px;
+        }
+        
+        /* 阅读器控制栏 */
+        .reader-controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 90;
+        }
+        
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:hover {
+            background-color: var(--text-color);
+            transform: translateY(-3px);
+        }
+        
+        /* 设置面板 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background-color: var(--secondary-bg);
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            overflow-y: auto;
+            z-index: 200;
+            transition: right 0.4s ease;
+        }
+        
+        .settings-panel.active {
+            right: 0;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .settings-header h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+        }
+        
+        .close-settings {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--light-text);
+            cursor: pointer;
+        }
+        
+        .setting-group {
+            margin-bottom: 30px;
+        }
+        
+        .setting-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .setting-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .theme-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.8rem;
+        }
+        
+        .theme-option:hover {
+            opacity: 0.9;
+        }
+        
+        .theme-option.active {
+            border-color: var(--accent-color);
+        }
+        
+        .theme-midnight {
+            background-color: var(--dark-bg);
+            color: var(--dark-text);
+        }
+        
+        .theme-parchment {
+            background-color: var(--parchment-bg);
+            color: var(--parchment-text);
+        }
+        
+        .theme-paper {
+            background-color: var(--paper-bg);
+            color: var(--paper-text);
+        }
+        
+        .theme-classic {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+        }
+        
+        .font-option {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--primary-bg);
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            min-width: 100px;
+        }
+        
+        .font-option:hover {
+            background-color: rgba(212, 185, 150, 0.1);
+        }
+        
+        .font-option.active {
+            border-color: var(--accent-color);
+            background-color: rgba(212, 185, 150, 0.2);
+        }
+        
+        /* 新增：字体选择 */
+        .font-option.simsun {
+            font-family: SimSun, STSong, "宋体";
+        }
+        
+        .font-option.kaiti {
+            font-family: KaiTi, STKaiti, "楷体", serif;
+        }
+        
+        .font-option.arial {
+            font-family: Arial, sans-serif;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+            color: var(--light-text);
+        }
+        
+        .slider {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--primary-bg);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--primary-bg);
+            border: 1px solid var(--border-color);
+            transition: .4s;
+            border-radius: 30px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 3px;
+            background-color: var(--accent-color);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--accent-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(28px);
+            background-color: white;
+        }
+        
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        /* 上传模态框 */
+        .upload-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .upload-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .upload-container {
+            width: 90%;
+            max-width: 500px;
+            background-color: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .upload-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .upload-area {
+            width: 100%;
+            height: 250px;
+            border: 3px dashed var(--accent-color);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 25px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .upload-area:hover {
+            background-color: rgba(212, 185, 150, 0.1);
+            border-color: var(--text-color);
+        }
+        
+        .upload-area i {
+            font-size: 4rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+        
+        .upload-area h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+        
+        .file-types {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .file-type {
+            padding: 6px 12px;
+            background-color: var(--primary-bg);
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--text-color);
+        }
+        
+        .btn-secondary {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: rgba(212, 185, 150, 0.1);
+        }
+        
+        .file-info {
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--light-text);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* 横向翻页阅读模式 */
+        .horizontal-reader-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--primary-bg);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .horizontal-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background-color: var(--secondary-bg);
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            z-index: 1001;
+        }
+        
+        .horizontal-pages {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            scroll-snap-type: x mandatory;
+        }
+        
+        .horizontal-page {
+            flex: 0 0 100vw;
+            height: 100%;
+            padding: 40px;
+            overflow-y: auto;
+            scroll-snap-align: start;
+            display: none;
+        }
+        
+        .horizontal-page.active {
+            display: block;
+        }
+        
+        .page-indicator {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        /* 沉浸式阅读模式 */
+        .immersive-mode .article-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        
+        .immersive-mode .reader-container {
+            padding: 0;
+        }
+        
+        /* 沉浸式模式退出按钮 */
+        .exit-immersive-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: var(--shadow);
+        }
+        
+        /* 语音控制面板 */
+        .voice-control-panel {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background-color: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            width: 320px;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .voice-control-panel.active {
+            display: flex;
+        }
+        
+        .voice-control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .voice-control-title {
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+        
+        .voice-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .voice-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .voice-btn:hover {
+            background-color: var(--text-color);
+        }
+        
+        .voice-btn.stop {
+            background-color: #ff6b6b;
+        }
+        
+        .voice-btn.pause {
+            background-color: #4ecdc4;
+        }
+        
+        .voice-btn.resume {
+            background-color: #45b7d1;
+        }
+        
+        .voice-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .voice-option-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .voice-label {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+        
+        .voice-select {
+            background-color: var(--primary-bg);
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            border-radius: 6px;
+            color: var(--text-color);
+            width: 140px;
+        }
+        
+        /* 阅读模式切换按钮 */
+        .reading-mode-controls {
+            position: fixed;
+            bottom: 160px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 90;
+        }
+        
+        .mode-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+        
+        .mode-btn:hover {
+            background-color: var(--text-color);
+            transform: translateY(-3px);
+        }
+        
+        .mode-btn.active {
+            background-color: var(--text-color);
+        }
+        
+        /* 高亮标记样式 */
+        .highlight {
+            background-color: rgba(255, 235, 150, 0.5);
+            padding: 2px 0;
+            border-radius: 3px;
+        }
+        
+        .highlight.yellow {
+            background-color: rgba(255, 235, 150, 0.5);
+        }
+        
+        .highlight.blue {
+            background-color: rgba(173, 216, 230, 0.5);
+        }
+        
+        .highlight.green {
+            background-color: rgba(144, 238, 144, 0.5);
+        }
+        
+        .highlight.pink {
+            background-color: rgba(255, 182, 193, 0.5);
+        }
+        
+        /* 翻译面板 */
+        .translation-panel {
+            position: fixed;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+            background-color: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            width: 300px;
+            display: none;
+        }
+        
+        .translation-panel.active {
+            display: block;
+        }
+        
+        .translation-content {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        /* 笔记面板 */
+        .note-panel {
+            position: fixed;
+            bottom: 100px;
+            left: 30px;
+            background-color: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            width: 300px;
+            display: none;
+        }
+        
+        .note-panel.active {
+            display: block;
+        }
+        
+        .note-content {
+            height: 200px;
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--primary-bg);
+            resize: none;
+        }
+        
+        /* 目录面板 */
+        .toc-panel {
+            position: fixed;
+            top: 50%;
+            left: 30px;
+            transform: translateY(-50%);
+            background-color: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .toc-panel.active {
+            display: block;
+        }
+        
+        .toc-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+        
+        .toc-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        
+        .toc-item:hover {
+            color: var(--accent-color);
+        }
+        
+        /* 新增：更多功能按钮容器 */
+        .more-features-container {
+            position: fixed;
+            bottom: 220px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 90;
+        }
+        
+        .more-features-panel {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .more-features-panel.active {
+            display: flex;
+        }
+        
+        /* 教程模态框 */
+        .tutorial-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        
+        .tutorial-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .tutorial-content {
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            background-color: var(--secondary-bg);
+            border-radius: 15px;
+            padding: 40px 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .tutorial-slide {
+            display: none;
+        }
+        
+        .tutorial-slide.active {
+            display: block;
+        }
+        
+        .tutorial-slide h2 {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: var(--text-color);
+            text-align: center;
+        }
+        
+        .tutorial-slide p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .tutorial-slide ul {
+            margin: 20px 0 30px 30px;
+        }
+        
+        .tutorial-slide li {
+            margin-bottom: 12px;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        .tutorial-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        
+        .tutorial-dots {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 25px 0;
+        }
+        
+        .tutorial-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            cursor: pointer;
+        }
+        
+        .tutorial-dot.active {
+            background-color: var(--accent-color);
+        }
+        
+        /* 移动设备适配 */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: var(--header-height);
+                width: 300px;
+                z-index: 150;
+                box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+                transition: left 0.3s;
+            }
+            
+            .sidebar.active {
+                left: 0;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .settings-panel {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .translation-panel,
+            .note-panel,
+            .toc-panel {
+                width: 90%;
+                left: 5%;
+                right: 5%;
+                transform: none;
+                top: 20px;
+            }
+            
+            /* 修复移动端按钮位置 */
+            .reading-mode-controls {
+                bottom: 160px;
+                right: 20px;
+            }
+            
+            .more-features-container {
+                bottom: 240px;
+                right: 20px;
+            }
+            
+            .more-features-panel {
+                position: absolute;
+                bottom: 60px;
+                right: 0;
+                background-color: var(--secondary-bg);
+                padding: 15px;
+                border-radius: 12px;
+                box-shadow: var(--shadow);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 0 15px;
+            }
+            
+            .logo h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header-btn span {
+                display: none;
+            }
+            
+            .header-btn i {
+                margin-right: 0;
+            }
+            
+            .reader-container {
+                padding: 20px;
+            }
+            
+            .article-title {
+                font-size: 2rem;
+            }
+            
+            .reader-controls,
+            .reading-mode-controls,
+            .more-features-container {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .voice-control-panel {
+                right: 20px;
+                bottom: 90px;
+                width: 280px;
+            }
+            
+            .control-btn,
+            .mode-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1.1rem;
+            }
+            
+            .reading-mode-controls {
+                bottom: 160px;
+            }
+            
+            .more-features-container {
+                bottom: 240px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .upload-container {
+                width: 95%;
+                padding: 20px;
+            }
+            
+            .upload-area {
+                height: 200px;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .voice-control-panel {
+                width: 260px;
+            }
+            
+            .tutorial-content {
+                padding: 30px 20px;
+            }
+            
+            .tutorial-slide h2 {
+                font-size: 1.7rem;
+            }
+        }
+        
+        /* 平板设备适配 */
+        @media (max-width: 1024px) {
+            .horizontal-page {
+                padding: 30px;
+            }
+            
+            .voice-control-panel {
+                width: 280px;
+                right: 20px;
+                bottom: 90px;
+            }
+            
+            .reading-mode-controls {
+                bottom: 150px;
+                right: 20px;
+            }
+            
+            .more-features-container {
+                bottom: 240px;
+                right: 20px;
+            }
+            
+            .mode-btn, .control-btn {
+                width: 45px;
+                height: 45px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .horizontal-page {
+                padding: 20px;
+            }
+            
+            .horizontal-controls {
+                padding: 12px 20px;
+                bottom: 15px;
+            }
+            
+            .voice-control-panel {
+                width: 260px;
+                right: 15px;
+                bottom: 80px;
+            }
+            
+            .reading-mode-controls {
+                bottom: 140px;
+                right: 15px;
+            }
+            
+            .more-features-container {
+                bottom: 200px;
+                right: 15px;
+            }
+            
+            .mode-btn, .control-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+        }
+        
+        /* 触摸设备优化 */
+        @media (hover: none) and (pointer: coarse) {
+            .horizontal-controls {
+                background-color: rgba(255, 255, 255, 0.9);
+            }
+            
+            .mode-btn, .control-btn, .voice-btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+        
+        /* 工具类 */
+        .hidden {
+            display: none !important;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 149;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--primary-bg);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color);
+        }
+        
+        /* 书签高亮 */
+        .bookmark-highlight {
+            background-color: rgba(255, 235, 150, 0.3);
+            border-radius: 3px;
+            padding: 2px 0;
+        }
+        
+        /* 夜间模式滚动条 */
+        body.dark-theme::-webkit-scrollbar-track {
+            background: var(--dark-secondary);
+        }
+        
+        body.dark-theme::-webkit-scrollbar-thumb {
+            background: var(--dark-accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 头部 -->
+        <header class="app-header">
+            <div class="logo">
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <i class="fas fa-book-reader logo-icon"></i>
+                <h1>严论阅读器</h1>
+            </div>
+            
+            <div class="header-controls">
+                <button class="header-btn" id="uploadNewBtn">
+                    <i class="fas fa-file-upload"></i>
+                    <span>上传文件</span>
+                </button>
+                <button class="header-btn" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                    <span>设置</span>
+                </button>
+            </div>
+        </header>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">
+                        <span>已打开文件</span>
+                        <button class="header-btn" id="closeAllFilesBtn" style="padding: 5px 10px; font-size: 0.8rem;">
+                            <i class="fas fa-times"></i> 全部关闭
+                        </button>
+                    </h3>
+                    <ul class="file-list" id="fileList">
+                        <!-- 文件将通过JavaScript动态添加 -->
+                    </ul>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">
+                        <span>书签</span>
+                        <button class="header-btn" id="addBookmarkBtn" style="padding: 5px 10px; font-size: 0.8rem;">
+                            <i class="fas fa-bookmark"></i> 添加
+                        </button>
+                    </h3>
+                    <ul class="bookmark-list" id="bookmarkList">
+                        <!-- 书签将通过JavaScript动态添加 -->
+                    </ul>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">阅读进度</h3>
+                    <div class="progress-section">
+                        <div class="progress-info">
+                            <span>已完成</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="reading-time">
+                        <i class="far fa-clock"></i>
+                        <span>阅读时间: <span id="readingTime">0分钟</span></span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">文件信息</h3>
+                    <div class="file-info" id="fileInfo">
+                        <div>
+                            <div>文件名: <span id="fileName">未选择文件</span></div>
+                            <div>文件大小: <span id="fileSize">0 KB</span></div>
+                            <div>字符数: <span id="charCount">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- 阅读器区域 -->
+            <main class="reader-container" id="readerContainer">
+                <div class="empty-reader" id="emptyReader">
+                    <i class="fas fa-book-open"></i>
+                    <h2>欢迎使用严论阅读器</h2>
+                    <p>支持多种文件格式：TXT、Markdown、PDF、DOCX、EPUB</p>
+                    <p>支持书签、阅读进度跟踪和个性化设置</p>
+                    <button class="btn btn-primary" id="startUploadBtn">
+                        <i class="fas fa-file-upload"></i> 上传文件
+                    </button>
+                </div>
+                
+                <div class="article-content" id="articleContent">
+                    <!-- 文章内容将在这里显示 -->
+                </div>
+            </main>
+            
+            <!-- 阅读器控制按钮 -->
+            <div class="reader-controls">
+                <button class="control-btn" id="scrollTopBtn" title="回到顶部">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <button class="control-btn" id="bookmarkBtn" title="添加书签">
+                    <i class="fas fa-bookmark"></i>
+                </button>
+                <button class="control-btn" id="sidebarToggleBtn" title="显示/隐藏侧边栏">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+            
+            <!-- 阅读模式切换按钮 -->
+            <div class="reading-mode-controls" id="readingModeControls">
+                <button class="mode-btn" id="immersiveModeBtn" title="沉浸式阅读">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <button class="mode-btn" id="horizontalModeBtn" title="横向翻页">
+                    <i class="fas fa-book-open"></i>
+                </button>
+                <button class="mode-btn" id="voiceModeBtn" title="语音朗读">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+            
+            <!-- 更多功能按钮容器 -->
+            <div class="more-features-container" id="moreFeaturesContainer">
+                <button class="mode-btn" id="moreFeaturesBtn" title="更多功能">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+                <div class="more-features-panel" id="moreFeaturesPanel">
+                    <button class="mode-btn" id="highlightBtn" title="高亮标记">
+                        <i class="fas fa-highlighter"></i>
+                    </button>
+                    <button class="mode-btn" id="translationBtn" title="翻译">
+                        <i class="fas fa-language"></i>
+                    </button>
+                    <button class="mode-btn" id="noteBtn" title="笔记">
+                        <i class="fas fa-sticky-note"></i>
+                    </button>
+                    <button class="mode-btn" id="tocBtn" title="目录">
+                        <i class="fas fa-list-ol"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 沉浸式模式退出按钮 -->
+        <button class="exit-immersive-btn hidden" id="exitImmersiveBtn" title="退出沉浸模式">
+            <i class="fas fa-compress"></i>
+        </button>
+        
+        <!-- 设置面板 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h2>个性化设置</h2>
+                <button class="close-settings" id="closeSettingsBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="setting-group">
+                <h3 class="setting-title">
+                    <i class="fas fa-palette"></i>
+                    主题配色
+                </h3>
+                <div class="setting-options">
+                    <div class="theme-option theme-classic active" data-theme="classic">
+                        <i class="fas fa-sun"></i>
+                        <span>经典米黄</span>
+                    </div>
+                    <div class="theme-option theme-parchment" data-theme="parchment">
+                        <i class="fas fa-scroll"></i>
+                        <span>羊皮纸</span>
+                    </div>
+                    <div class="theme-option theme-paper" data-theme="paper">
+                        <i class="fas fa-file-alt"></i>
+                        <span>浅色纸张</span>
+                    </div>
+                    <div class="theme-option theme-midnight" data-theme="dark">
+                        <i class="fas fa-moon"></i>
+                        <span>夜间模式</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <h3 class="setting-title">
+                    <i class="fas fa-font"></i>
+                    字体设置
+                </h3>
+                
+                <div class="setting-options">
+                    <div class="font-option active" data-font="serif">
+                        衬线字体
+                    </div>
+                    <div class="font-option" data-font="sans">
+                        无衬线字体
+                    </div>
+                    <div class="font-option simsun" data-font="simsun">
+                        宋体
+                    </div>
+                    <div class="font-option kaiti" data-font="kaiti">
+                        楷体
+                    </div>
+                    <div class="font-option arial" data-font="arial">
+                        Arial
+                    </div>
+                </div>
+                
+                <div class="setting-title" style="margin-top: 20px;">
+                    <span>字体大小</span>
+                    <span class="slider-value" id="fontSizeValue">1.1rem</span>
+                </div>
+                <div class="slider-container">
+                    <input type="range" min="0.8" max="2.0" step="0.1" value="1.1" class="slider" id="fontSizeSlider">
+                </div>
+                
+                <div class="setting-title" style="margin-top: 20px;">
+                    <span>行高</span>
+                    <span class="slider-value" id="lineHeightValue">1.8</span>
+                </div>
+                <div class="slider-container">
+                    <input type="range" min="1.2" max="2.5" step="0.1" value="1.8" class="slider" id="lineHeightSlider">
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <h3 class="setting-title">
+                    <i class="fas fa-eye"></i>
+                    阅读设置
+                </h3>
+                
+                <div class="toggle-label">
+                    <span>自动保存设置</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoSaveToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-label">
+                    <span>显示阅读进度</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showProgressToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 上传文件模态框 -->
+        <div class="upload-modal" id="uploadModal">
+            <div class="upload-container">
+                <div class="upload-header">
+                    <h2>上传文件</h2>
+                    <button class="close-settings" id="closeUploadBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-file-upload"></i>
+                    <h3>点击或拖拽文件到此处</h3>
+                    <p>支持多种文件格式</p>
+                    <div class="file-types">
+                        <span class="file-type">.txt</span>
+                        <span class="file-type">.md</span>
+                        <span class="file-type">.pdf</span>
+                        <span class="file-type">.docx</span>
+                        <span class="file-type">.epub</span>
+                        <span class="file-type">.doc</span>
+                        <span class="file-type">.rtf</span>
+                    </div>
+                </div>
+                
+                <input type="file" id="fileInput" accept=".txt,.md,.markdown,.pdf,.docx,.epub,.doc,.rtf" class="hidden" multiple>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancelUploadBtn">取消</button>
+                    <button class="btn btn-primary" id="confirmUploadBtn">选择文件</button>
+                </div>
+                
+                <div class="file-info" id="selectedFileInfo">
+                    <div>
+                        <span>已选择: </span><span id="selectedFileCount">0 个文件</span>
+                    </div>
+                    <div>
+                        <span>总大小: </span><span id="selectedTotalSize">0 KB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 横向翻页阅读容器 -->
+        <div class="horizontal-reader-container hidden" id="horizontalReaderContainer">
+            <div class="horizontal-controls">
+                <button class="control-btn" id="prevHorizontalPage">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span class="page-indicator">
+                    <span id="currentPage">1</span> / <span id="totalPages">1</span>
+                </span>
+                <button class="control-btn" id="nextHorizontalPage">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="control-btn" id="exitHorizontalMode">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="horizontal-pages" id="horizontalPages"></div>
+        </div>
+        
+        <!-- 语音控制面板 -->
+        <div class="voice-control-panel" id="voiceControlPanel">
+            <div class="voice-control-header">
+                <h3 class="voice-control-title">语音朗读控制</h3>
+                <button class="close-settings" id="closeVoicePanelBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="voice-controls">
+                <button class="voice-btn" id="playVoiceBtn" title="开始朗读">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="voice-btn pause" id="pauseVoiceBtn" title="暂停朗读">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button class="voice-btn resume" id="resumeVoiceBtn" title="继续朗读">
+                    <i class="fas fa-play-circle"></i>
+                </button>
+                <button class="voice-btn stop" id="stopVoiceBtn" title="停止朗读">
+                    <i class="fas fa-stop"></i>
+                </button>
+            </div>
+            
+            <div class="voice-options">
+                <div class="voice-option-row">
+                    <span class="voice-label">语音类型:</span>
+                    <select class="voice-select" id="voiceTypeSelect">
+                        <option value="zh-CN-female">中文女声</option>
+                        <option value="zh-CN-male">中文男声</option>
+                        <option value="en-US-female">英文女声</option>
+                        <option value="en-US-male">英文男声</option>
+                        <option value="ja-JP-female">日文女声</option>
+                        <option value="ko-KR-female">韩文女声</option>
+                    </select>
+                </div>
+                
+                <div class="voice-option-row">
+                    <span class="voice-label">朗读速度:</span>
+                    <input type="range" min="0.5" max="2.0" step="0.1" value="1.0" class="slider" id="voiceRateSlider">
+                    <span class="slider-value" id="voiceRateValue">1.0x</span>
+                </div>
+                
+                <div class="voice-option-row">
+                    <span class="voice-label">朗读音调:</span>
+                    <input type="range" min="0.5" max="2.0" step="0.1" value="1.0" class="slider" id="voicePitchSlider">
+                    <span class="slider-value" id="voicePitchValue">1.0</span>
+                </div>
+                
+                <div class="voice-option-row">
+                    <span class="voice-label">朗读音量:</span>
+                    <input type="range" min="0.1" max="1.0" step="0.1" value="1.0" class="slider" id="voiceVolumeSlider">
+                    <span class="slider-value" id="voiceVolumeValue">100%</span>
+                </div>
+            </div>
+            
+            <div class="voice-info" id="voiceInfo" style="font-size: 0.8rem; color: var(--light-text); text-align: center;">
+                支持朗读选中文本，双击任意位置开始朗读
+            </div>
+        </div>
+        
+        <!-- 高亮标记面板 -->
+        <div class="voice-control-panel" id="highlightPanel" style="width: 200px;">
+            <div class="voice-control-header">
+                <h3 class="voice-control-title">高亮标记</h3>
+                <button class="close-settings" id="closeHighlightBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="voice-options">
+                <div class="voice-option-row" style="justify-content: center; gap: 10px;">
+                    <button class="voice-btn" style="background-color: rgba(255, 235, 150, 0.5);" data-color="yellow" title="黄色高亮">
+                        <i class="fas fa-highlighter"></i>
+                    </button>
+                    <button class="voice-btn" style="background-color: rgba(173, 216, 230, 0.5);" data-color="blue" title="蓝色高亮">
+                        <i class="fas fa-highlighter"></i>
+                    </button>
+                    <button class="voice-btn" style="background-color: rgba(144, 238, 144, 0.5);" data-color="green" title="绿色高亮">
+                        <i class="fas fa-highlighter"></i>
+                    </button>
+                    <button class="voice-btn" style="background-color: rgba(255, 182, 193, 0.5);" data-color="pink" title="粉色高亮">
+                        <i class="fas fa-highlighter"></i>
+                    </button>
+                </div>
+                <button class="btn btn-secondary" id="clearHighlightsBtn" style="width: 100%; margin-top: 10px;">
+                    清除所有高亮
+                </button>
+            </div>
+        </div>
+        
+        <!-- 翻译面板 -->
+        <div class="translation-panel" id="translationPanel">
+            <div class="voice-control-header">
+                <h3 class="voice-control-title">文本翻译</h3>
+                <button class="close-settings" id="closeTranslationBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="voice-options">
+                <div class="voice-option-row">
+                    <span class="voice-label">源语言:</span>
+                    <select class="voice-select" id="sourceLangSelect">
+                        <option value="auto">自动检测</option>
+                        <option value="zh">中文</option>
+                        <option value="en">英文</option>
+                        <option value="ja">日文</option>
+                        <option value="ko">韩文</option>
+                    </select>
+                </div>
+                
+                <div class="voice-option-row">
+                    <span class="voice-label">目标语言:</span>
+                    <select class="voice-select" id="targetLangSelect">
+                        <option value="zh">中文</option>
+                        <option value="en">英文</option>
+                        <option value="ja">日文</option>
+                        <option value="ko">韩文</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary" id="translateBtn" style="width: 100%; margin-top: 10px;">
+                    翻译选中文本
+                </button>
+            </div>
+            
+            <div class="translation-content" id="translationContent">
+                请先选中文本，然后点击翻译按钮
+            </div>
+        </div>
+        
+        <!-- 笔记面板 -->
+        <div class="note-panel" id="notePanel">
+            <div class="voice-control-header">
+                <h3 class="voice-control-title">阅读笔记</h3>
+                <button class="close-settings" id="closeNoteBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <textarea class="note-content" id="noteContent" placeholder="在此处输入笔记..."></textarea>
+            
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="btn btn-secondary" id="saveNoteBtn">保存笔记</button>
+                <button class="btn btn-primary" id="loadNoteBtn">加载笔记</button>
+            </div>
+        </div>
+        
+        <!-- 目录面板 -->
+        <div class="toc-panel" id="tocPanel">
+            <div class="voice-control-header">
+                <h3 class="voice-control-title">目录</h3>
+                <button class="close-settings" id="closeTocBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <ul class="toc-list" id="tocList">
+                <li class="toc-item">暂无目录信息</li>
+            </ul>
+        </div>
+        
+        <!-- 教程模态框 -->
+        <div class="tutorial-modal" id="tutorialModal">
+            <div class="tutorial-content">
+                <div class="tutorial-slide active" id="slide1">
+                    <h2>欢迎使用严论阅读器</h2>
+                    <p>这是一款功能强大的现代化阅读器，专为深度阅读设计</p>
+                    <p>支持多种文件格式，提供丰富的个性化设置</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <i class="fas fa-book-reader" style="font-size: 4rem; color: var(--accent-color);"></i>
+                    </div>
+                </div>
+                
+                <div class="tutorial-slide" id="slide2">
+                    <h2>核心功能</h2>
+                    <ul>
+                        <li><strong>多格式支持</strong>：支持TXT、Markdown、PDF、DOCX、EPUB等</li>
+                        <li><strong>智能解析</strong>：自动识别文件结构，提取标题和章节</li>
+                        <li><strong>书签管理</strong>：添加、删除和跳转到书签位置</li>
+                        <li><strong>阅读跟踪</strong>：记录阅读进度和时间统计</li>
+                        <li><strong>个性化设置</strong>：多种主题配色、字体样式和大小调节</li>
+                        <li><strong>语音朗读</strong>：支持中英文文本朗读（需浏览器支持）</li>
+                    </ul>
+                </div>
+                
+                <div class="tutorial-slide" id="slide3">
+                    <h2>使用指南</h2>
+                    <ol style="margin-left: 30px;">
+                        <li>点击"上传文件"按钮或拖拽文件到上传区域</li>
+                        <li>选择您要阅读的文件（支持多选）</li>
+                        <li>使用侧边栏管理已打开的文件和书签</li>
+                        <li>右下角按钮控制阅读模式和更多功能</li>
+                        <li>在设置面板中调整主题、字体等个性化选项</li>
+                        <li>双击文本可以开始语音朗读（如果支持）</li>
+                    </ol>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <p>现在就上传您的第一份文档，开始阅读吧！</p>
+                    </div>
+                </div>
+                
+                <div class="tutorial-dots">
+                    <div class="tutorial-dot active" data-slide="1"></div>
+                    <div class="tutorial-dot" data-slide="2"></div>
+                    <div class="tutorial-dot" data-slide="3"></div>
+                </div>
+                
+                <div class="tutorial-navigation">
+                    <button class="btn btn-secondary" id="prevTutorialBtn">上一步</button>
+                    <button class="btn btn-primary" id="nextTutorialBtn">下一步</button>
+                    <button class="btn btn-primary" id="skipTutorialBtn" style="display: none;">开始使用</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 移动端遮罩层 -->
+        <div class="overlay" id="overlay"></div>
+    </div>
+
+    <script>
+        // 严论阅读器 - 修复和优化版
+        
+        // 文件解析器模块
+        class FileParsers {
+            constructor() {
+                this.epub = window.ePub;
+                this.pdfjsLib = window.pdfjsLib;
+                this.mammoth = window.mammoth;
+            }
+
+            // 解析TXT文件
+            parseTxt(content) {
+                return content;
+            }
+
+            // 解析Markdown文件
+            parseMarkdown(content) {
+                let html = content;
+                
+                // 标题
+                html = html.replace(/^##### (.*$)/gim, '<h5>$1</h5>');
+                html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+                html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+                html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+                html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+                
+                // 粗体
+                html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+                html = html.replace(/__(.*?)__/gim, '<strong>$1</strong>');
+                
+                // 斜体
+                html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+                html = html.replace(/_(.*?)_/gim, '<em>$1</em>');
+                
+                // 删除线
+                html = html.replace(/~~(.*?)~~/gim, '<del>$1</del>');
+                
+                // 引用
+                html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+                
+                // 代码块
+                html = html.replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>');
+                
+                // 行内代码
+                html = html.replace(/`(.*?)`/gim, '<code>$1</code>');
+                
+                // 水平线
+                html = html.replace(/^---$/gim, '<hr>');
+                html = html.replace(/^\*\*\*$/gim, '<hr>');
+                html = html.replace(/^___$/gim, '<hr>');
+                
+                // 链接
+                html = html.replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>');
+                
+                // 图片
+                html = html.replace(/!\[(.*?)\]\((.*?)\)/gim, '<img src="$2" alt="$1">');
+                
+                // 列表处理
+                html = html.replace(/^\s*[-*+] (.*$)/gim, '<li>$1</li>');
+                html = html.replace(/^\s*\d+\. (.*$)/gim, '<li>$1</li>');
+                
+                // 处理段落
+                let lines = html.split('\n');
+                let result = [];
+                let paragraph = [];
+                
+                for (let line of lines) {
+                    line = line.trim();
+                    
+                    if (line.startsWith('<') || line === '') {
+                        if (paragraph.length > 0) {
+                            result.push('<p>' + paragraph.join(' ') + '</p>');
+                            paragraph = [];
+                        }
+                        
+                        if (line) {
+                            result.push(line);
+                        }
+                    } else {
+                        paragraph.push(line);
+                    }
+                }
+                
+                if (paragraph.length > 0) {
+                    result.push('<p>' + paragraph.join(' ') + '</p>');
+                }
+                
+                return result.join('\n');
+            }
+
+            // 解析PDF文件
+            async parsePDF(file) {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        // 设置PDF.js工作路径
+                        if (window.pdfjsLib) {
+                            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                        }
+                        
+                        const arrayBuffer = await file.arrayBuffer();
+                        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                        
+                        let fullText = '';
+                        
+                        // 只解析前20页避免性能问题
+                        const maxPages = Math.min(20, pdf.numPages);
+                        
+                        for (let i = 1; i <= maxPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const pageText = textContent.items.map(item => item.str).join(' ');
+                            fullText += pageText + '\n\n';
+                        }
+                        
+                        resolve(fullText);
+                    } catch (error) {
+                        console.error('PDF解析错误:', error);
+                        reject(new Error('PDF文件解析失败，请确保文件格式正确'));
+                    }
+                });
+            }
+
+            // 解析DOCX文件
+            async parseDOCX(file) {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const result = await window.mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                        resolve(result.value);
+                    } catch (error) {
+                        console.error('DOCX解析错误:', error);
+                        reject(new Error('DOCX文件解析失败'));
+                    }
+                });
+            }
+
+            // 解析EPUB文件
+            async parseEPUB(file) {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        if (!window.ePub) {
+                            reject(new Error('EPUB解析库未加载，请检查网络连接'));
+                            return;
+                        }
+                        
+                        const url = URL.createObjectURL(file);
+                        const book = window.ePub(url);
+                        
+                        await book.ready;
+                        
+                        let fullText = '';
+                        const spine = book.spine;
+                        
+                        // 只解析前10章避免内存问题
+                        const chapters = spine.items.slice(0, Math.min(10, spine.items.length));
+                        
+                        for (let item of chapters) {
+                            try {
+                                await item.load(book.load.bind(book));
+                                const content = await item.content();
+                                
+                                // 提取文本
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = content;
+                                const text = tempDiv.textContent || tempDiv.innerText;
+                                fullText += text + '\n\n';
+                            } catch (e) {
+                                console.warn('章节解析失败:', e);
+                            }
+                        }
+                        
+                        URL.revokeObjectURL(url);
+                        resolve(fullText);
+                    } catch (error) {
+                        console.error('EPUB解析错误:', error);
+                        reject(new Error('EPUB文件解析失败，请确保文件格式正确'));
+                    }
+                });
+            }
+
+            // 根据文件类型自动选择解析器
+            async parseFile(file) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                
+                switch (ext) {
+                    case 'txt':
+                        return await this.parseTxt(await file.text());
+                    case 'md':
+                    case 'markdown':
+                        return await this.parseMarkdown(await file.text());
+                    case 'pdf':
+                        return await this.parsePDF(file);
+                    case 'docx':
+                    case 'doc':
+                    case 'rtf':
+                        return await this.parseDOCX(file);
+                    case 'epub':
+                        return await this.parseEPUB(file);
+                    default:
+                        throw new Error('不支持的文件格式');
+                }
+            }
+        }
+
+        // 文本朗读模块（改进版）
+        class VoiceReader {
+            constructor() {
+                this.isSpeaking = false;
+                this.paused = false;
+                this.currentUtterance = null;
+                this.availableVoices = [];
+                this.supported = false;
+                
+                // 更严格的浏览器支持检测
+                try {
+                    this.supported = ('speechSynthesis' in window) && 
+                                    ('SpeechSynthesisUtterance' in window) &&
+                                    (typeof SpeechSynthesisUtterance === 'function');
+                } catch (e) {
+                    this.supported = false;
+                }
+                
+                if (this.supported) {
+                    this.init();
+                }
+            }
+
+            init() {
+                // 等待语音列表加载
+                const loadVoices = () => {
+                    try {
+                        this.availableVoices = speechSynthesis.getVoices();
+                        console.log('可用语音列表:', this.availableVoices.length);
+                    } catch (e) {
+                        console.error('获取语音列表失败:', e);
+                        this.supported = false;
+                    }
+                };
+                
+                try {
+                    if (speechSynthesis.onvoiceschanged !== undefined) {
+                        speechSynthesis.onvoiceschanged = loadVoices;
+                    }
+                    
+                    // 立即加载语音
+                    loadVoices();
+                    
+                    // 如果5秒后还是没有语音，可能是被阻止了
+                    setTimeout(() => {
+                        if (this.availableVoices.length === 0) {
+                            console.warn('未检测到可用语音，可能是浏览器设置或WebView限制');
+                        }
+                    }, 5000);
+                } catch (e) {
+                    console.error('语音初始化失败:', e);
+                    this.supported = false;
+                }
+            }
+
+            // 按语言和性别筛选语音
+            getFilteredVoices(lang = 'zh-CN', gender = 'female') {
+                if (!this.availableVoices || this.availableVoices.length === 0) {
+                    return [];
+                }
+                
+                return this.availableVoices.filter(voice => {
+                    try {
+                        const voiceLang = voice.lang.toLowerCase();
+                        const targetLang = lang.toLowerCase();
+                        
+                        // 检查语言是否匹配
+                        const langMatch = voiceLang.includes(targetLang) || 
+                                         (targetLang === 'en' && voiceLang.includes('en')) ||
+                                         (targetLang === 'ja' && voiceLang.includes('ja')) ||
+                                         (targetLang === 'ko' && voiceLang.includes('ko'));
+                        
+                        if (!langMatch) return false;
+                        
+                        if (gender === 'female') {
+                            return voice.name.toLowerCase().includes('female') ||
+                                   voice.name.toLowerCase().includes('woman') ||
+                                   voice.name.toLowerCase().includes('female') ||
+                                   voice.name.toLowerCase().includes('女') ||
+                                   voice.name.toLowerCase().includes('xiaoxiao') ||
+                                   voice.name.toLowerCase().includes('xiaoyi');
+                        } else {
+                            return voice.name.toLowerCase().includes('male') ||
+                                   voice.name.toLowerCase().includes('man') ||
+                                   voice.name.toLowerCase().includes('男') ||
+                                   voice.name.toLowerCase().includes('yunyang');
+                        }
+                    } catch (e) {
+                        console.error('语音筛选错误:', e);
+                        return false;
+                    }
+                });
+            }
+
+            // 开始朗读
+            speak(text, options = {}) {
+                if (!this.supported) {
+                    return Promise.reject(new Error('浏览器或应用环境不支持文本转语音'));
+                }
+
+                // 检查语音API是否可用
+                try {
+                    if (typeof SpeechSynthesisUtterance !== 'function') {
+                        return Promise.reject(new Error('语音合成API不可用'));
+                    }
+                } catch (e) {
+                    return Promise.reject(new Error('语音合成API初始化失败'));
+                }
+
+                if (this.isSpeaking) {
+                    this.stop();
+                }
+
+                return new Promise((resolve, reject) => {
+                    try {
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        
+                        // 设置语音参数
+                        utterance.lang = options.lang || 'zh-CN';
+                        utterance.rate = options.rate || 1.0;
+                        utterance.pitch = options.pitch || 1.0;
+                        utterance.volume = options.volume || 1.0;
+                        
+                        // 选择语音
+                        const voiceType = options.voiceType || 'zh-CN-female';
+                        const [lang, gender] = voiceType.split('-');
+                        const voices = this.getFilteredVoices(lang, gender);
+                        if (voices.length > 0) {
+                            utterance.voice = voices[0];
+                        }
+                        
+                        // 事件监听
+                        utterance.onstart = () => {
+                            this.isSpeaking = true;
+                            this.paused = false;
+                            this.currentUtterance = utterance;
+                            
+                            if (options.onStart) options.onStart();
+                        };
+                        
+                        utterance.onend = () => {
+                            this.isSpeaking = false;
+                            this.currentUtterance = null;
+                            
+                            if (options.onEnd) options.onEnd();
+                            resolve();
+                        };
+                        
+                        utterance.onerror = (event) => {
+                            this.isSpeaking = false;
+                            this.currentUtterance = null;
+                            
+                            if (options.onError) options.onError(event.error);
+                            reject(event.error);
+                        };
+                        
+                        utterance.onpause = () => {
+                            this.paused = true;
+                            if (options.onPause) options.onPause();
+                        };
+                        
+                        utterance.onresume = () => {
+                            this.paused = false;
+                            if (options.onResume) options.onResume();
+                        };
+                        
+                        // 开始朗读
+                        speechSynthesis.speak(utterance);
+                        
+                    } catch (error) {
+                        console.error('语音合成初始化错误:', error);
+                        reject(new Error('语音朗读功能初始化失败'));
+                    }
+                });
+            }
+
+            // 暂停朗读
+            pause() {
+                if (this.isSpeaking && !this.paused) {
+                    try {
+                        speechSynthesis.pause();
+                        this.paused = true;
+                    } catch (e) {
+                        console.error('暂停朗读失败:', e);
+                    }
+                }
+            }
+
+            // 恢复朗读
+            resume() {
+                if (this.isSpeaking && this.paused) {
+                    try {
+                        speechSynthesis.resume();
+                        this.paused = false;
+                    } catch (e) {
+                        console.error('恢复朗读失败:', e);
+                    }
+                }
+            }
+
+            // 停止朗读
+            stop() {
+                if (this.isSpeaking) {
+                    try {
+                        speechSynthesis.cancel();
+                        this.isSpeaking = false;
+                        this.paused = false;
+                        this.currentUtterance = null;
+                    } catch (e) {
+                        console.error('停止朗读失败:', e);
+                    }
+                }
+            }
+
+            // 检查是否支持
+            isSupported() {
+                return this.supported;
+            }
+
+            // 获取当前状态
+            getStatus() {
+                return {
+                    isSpeaking: this.isSpeaking,
+                    paused: this.paused,
+                    supported: this.supported,
+                    voicesCount: this.availableVoices.length
+                };
+            }
+        }
+
+        // 阅读模式管理器
+        class ReadingModes {
+            constructor() {
+                this.currentMode = 'vertical'; // vertical, horizontal, immersive
+                this.isImmersive = false;
+                this.horizontalPage = 0;
+                this.totalHorizontalPages = 0;
+                
+                this.init();
+            }
+
+            init() {
+                // 创建横向翻页容器
+                this.bindHorizontalEvents();
+            }
+
+            // 绑定横向翻页事件
+            bindHorizontalEvents() {
+                const prevBtn = document.getElementById('prevHorizontalPage');
+                const nextBtn = document.getElementById('nextHorizontalPage');
+                const exitBtn = document.getElementById('exitHorizontalMode');
+                
+                if (prevBtn) prevBtn.addEventListener('click', () => this.prevPage());
+                if (nextBtn) nextBtn.addEventListener('click', () => this.nextPage());
+                if (exitBtn) exitBtn.addEventListener('click', () => this.switchToMode('vertical'));
+                
+                // 键盘翻页支持
+                document.addEventListener('keydown', (e) => {
+                    if (this.currentMode === 'horizontal') {
+                        if (e.key === 'ArrowLeft') {
+                            this.prevPage();
+                        } else if (e.key === 'ArrowRight') {
+                            this.nextPage();
+                        } else if (e.key === 'Escape') {
+                            this.switchToMode('vertical');
+                        }
+                    }
+                    
+                    if (this.currentMode === 'immersive' && e.key === 'Escape') {
+                        this.switchToMode('vertical');
+                    }
+                });
+
+                // 触摸滑动翻页
+                const horizontalPages = document.getElementById('horizontalPages');
+                if (horizontalPages) {
+                    let touchStartX = 0;
+                    
+                    horizontalPages.addEventListener('touchstart', (e) => {
+                        touchStartX = e.touches[0].clientX;
+                    });
+
+                    horizontalPages.addEventListener('touchend', (e) => {
+                        const touchEndX = e.changedTouches[0].clientX;
+                        const diff = touchStartX - touchEndX;
+
+                        if (Math.abs(diff) > 50) { // 滑动阈值
+                            if (diff > 0) {
+                                this.nextPage();
+                            } else {
+                                this.prevPage();
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 切换到指定阅读模式
+            switchToMode(mode) {
+                // 移除所有模式类
+                document.body.classList.remove('vertical-mode', 'horizontal-mode', 'immersive-mode');
+                document.getElementById('horizontalReaderContainer').classList.add('hidden');
+                document.getElementById('exitImmersiveBtn').classList.add('hidden');
+                
+                // 显示/隐藏原始阅读器
+                const readerContainer = document.getElementById('readerContainer');
+                const sidebar = document.getElementById('sidebar');
+                const header = document.querySelector('.app-header');
+                const readerControls = document.querySelector('.reader-controls');
+                const readingModeControls = document.getElementById('readingModeControls');
+                const moreFeaturesContainer = document.getElementById('moreFeaturesContainer');
+                
+                switch (mode) {
+                    case 'horizontal':
+                        this.currentMode = 'horizontal';
+                        this.isImmersive = false;
+                        document.body.classList.add('horizontal-mode');
+                        
+                        // 隐藏原始阅读器元素
+                        readerContainer.classList.add('hidden');
+                        sidebar.classList.add('hidden');
+                        header.classList.add('hidden');
+                        if (readerControls) readerControls.classList.add('hidden');
+                        if (readingModeControls) readingModeControls.classList.add('hidden');
+                        if (moreFeaturesContainer) moreFeaturesContainer.classList.add('hidden');
+                        
+                        // 显示横向阅读器
+                        document.getElementById('horizontalReaderContainer').classList.remove('hidden');
+                        
+                        // 准备横向翻页内容
+                        this.prepareHorizontalContent();
+                        break;
+                        
+                    case 'immersive':
+                        this.currentMode = 'immersive';
+                        this.isImmersive = true;
+                        document.body.classList.add('immersive-mode');
+                        
+                        // 隐藏侧边栏和控制按钮
+                        sidebar.classList.add('hidden');
+                        header.classList.add('hidden');
+                        if (readerControls) readerControls.classList.add('hidden');
+                        if (readingModeControls) readingModeControls.classList.add('hidden');
+                        if (moreFeaturesContainer) moreFeaturesContainer.classList.add('hidden');
+                        
+                        // 显示退出按钮
+                        document.getElementById('exitImmersiveBtn').classList.remove('hidden');
+                        
+                        // 全屏阅读器
+                        readerContainer.style.padding = '0';
+                        readerContainer.style.margin = '0';
+                        readerContainer.style.width = '100vw';
+                        readerContainer.style.height = '100vh';
+                        break;
+                        
+                    default: // vertical
+                        this.currentMode = 'vertical';
+                        this.isImmersive = false;
+                        document.body.classList.add('vertical-mode');
+                        
+                        // 恢复所有元素
+                        readerContainer.classList.remove('hidden');
+                        sidebar.classList.remove('hidden');
+                        header.classList.remove('hidden');
+                        if (readerControls) readerControls.classList.remove('hidden');
+                        if (readingModeControls) readingModeControls.classList.remove('hidden');
+                        if (moreFeaturesContainer) moreFeaturesContainer.classList.remove('hidden');
+                        
+                        // 恢复阅读器样式
+                        readerContainer.style.padding = '';
+                        readerContainer.style.margin = '';
+                        readerContainer.style.width = '';
+                        readerContainer.style.height = '';
+                        break;
+                }
+                
+                // 保存模式到本地存储
+                localStorage.setItem('readingMode', mode);
+            }
+
+            // 准备横向翻页内容
+            prepareHorizontalContent() {
+                const articleBody = document.querySelector('.article-body');
+                if (!articleBody) return;
+                
+                const pagesContainer = document.getElementById('horizontalPages');
+                pagesContainer.innerHTML = '';
+                
+                // 获取所有段落
+                const paragraphs = articleBody.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote, pre');
+                let currentPageContent = '';
+                let pageCount = 0;
+                const pages = [];
+                
+                // 简单分页算法（按字数）
+                let currentChars = 0;
+                const maxCharsPerPage = 1500; // 每页大约1500字符
+                
+                paragraphs.forEach((para, index) => {
+                    const paraText = para.outerHTML;
+                    currentPageContent += paraText;
+                    currentChars += para.textContent.length;
+                    
+                    // 如果超过最大字符数，或者这是最后一个段落，则创建新页
+                    if (currentChars >= maxCharsPerPage || index === paragraphs.length - 1) {
+                        pages.push(currentPageContent);
+                        pageCount++;
+                        currentPageContent = '';
+                        currentChars = 0;
+                    }
+                });
+                
+                // 如果没有内容，至少创建一页
+                if (pages.length === 0) {
+                    pages.push(articleBody.innerHTML);
+                }
+                
+                // 创建页面元素
+                pages.forEach((pageContent, index) => {
+                    const pageElement = document.createElement('div');
+                    pageElement.className = 'horizontal-page';
+                    pageElement.innerHTML = `<div class="article-content">${pageContent}</div>`;
+                    pagesContainer.appendChild(pageElement);
+                });
+                
+                this.totalHorizontalPages = pages.length;
+                this.horizontalPage = 0;
+                this.updateHorizontalPage();
+            }
+
+            // 更新横向翻页显示
+            updateHorizontalPage() {
+                const pages = document.querySelectorAll('.horizontal-page');
+                const pageIndicator = document.getElementById('currentPage');
+                const totalPages = document.getElementById('totalPages');
+                
+                // 隐藏所有页面
+                pages.forEach(page => page.classList.remove('active'));
+                
+                // 显示当前页面
+                if (pages[this.horizontalPage]) {
+                    pages[this.horizontalPage].classList.add('active');
+                }
+                
+                // 更新页码指示器
+                if (pageIndicator) pageIndicator.textContent = this.horizontalPage + 1;
+                if (totalPages) totalPages.textContent = this.totalHorizontalPages;
+                
+                // 更新按钮状态
+                const prevBtn = document.getElementById('prevHorizontalPage');
+                const nextBtn = document.getElementById('nextHorizontalPage');
+                if (prevBtn) prevBtn.disabled = this.horizontalPage === 0;
+                if (nextBtn) nextBtn.disabled = this.horizontalPage === this.totalHorizontalPages - 1;
+            }
+
+            // 上一页
+            prevPage() {
+                if (this.horizontalPage > 0) {
+                    this.horizontalPage--;
+                    this.updateHorizontalPage();
+                }
+            }
+
+            // 下一页
+            nextPage() {
+                if (this.horizontalPage < this.totalHorizontalPages - 1) {
+                    this.horizontalPage++;
+                    this.updateHorizontalPage();
+                }
+            }
+
+            // 切换沉浸式模式
+            toggleImmersiveMode() {
+                if (this.isImmersive) {
+                    this.switchToMode('vertical');
+                } else {
+                    this.switchToMode('immersive');
+                }
+            }
+        }
+
+        // 翻译功能模块
+        class TranslationService {
+            constructor() {
+                this.apiKey = null;
+                this.supportedLanguages = {
+                    'zh': '中文',
+                    'en': '英文',
+                    'ja': '日文',
+                    'ko': '韩文',
+                    'fr': '法文',
+                    'de': '德文',
+                    'es': '西班牙文',
+                    'ru': '俄文'
+                };
+            }
+
+            // 使用免费翻译API（模拟）
+            async translate(text, sourceLang = 'auto', targetLang = 'zh') {
+                // 这是一个模拟的翻译函数
+                // 在实际应用中，您需要替换为真实的翻译API
+                
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        // 模拟翻译延迟
+                        let translatedText = text;
+                        
+                        // 简单的模拟翻译逻辑
+                        if (targetLang === 'en' && sourceLang !== 'en') {
+                            translatedText = `[Translation to English]: ${text}`;
+                        } else if (targetLang === 'zh' && sourceLang !== 'zh') {
+                            translatedText = `[翻译成中文]: ${text}`;
+                        } else if (targetLang === 'ja') {
+                            translatedText = `[日本語に翻訳]: ${text}`;
+                        } else if (targetLang === 'ko') {
+                            translatedText = `[한국어로 번역]: ${text}`;
+                        }
+                        
+                        resolve({
+                            original: text,
+                            translated: translatedText,
+                            sourceLang: sourceLang,
+                            targetLang: targetLang
+                        });
+                    }, 500);
+                });
+            }
+
+            // 检测语言
+            detectLanguage(text) {
+                // 简单的语言检测逻辑
+                const chineseRegex = /[\u4e00-\u9fa5]/;
+                const englishRegex = /^[a-zA-Z\s.,!?]+$/;
+                const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF]/;
+                const koreanRegex = /[\uAC00-\uD7AF]/;
+                
+                if (chineseRegex.test(text)) return 'zh';
+                if (englishRegex.test(text)) return 'en';
+                if (japaneseRegex.test(text)) return 'ja';
+                if (koreanRegex.test(text)) return 'ko';
+                
+                return 'en'; // 默认英文
+            }
+        }
+
+        // 全局状态管理
+        const AppState = {
+            currentFileIndex: 0,
+            files: [], // 存储所有打开的文件
+            bookmarks: [],
+            readingProgress: 0,
+            readingTime: 0, // 分钟
+            readingStartTime: null,
+            currentPosition: 0,
+            settings: {
+                theme: 'classic',
+                fontSize: 1.1,
+                lineHeight: 1.8,
+                fontType: 'serif', // 字体类型
+                nightMode: false,
+                autoSave: true,
+                showProgress: true,
+                readingMode: 'vertical',
+                voiceSettings: {
+                    voiceType: 'zh-CN-female',
+                    rate: 1.0,
+                    pitch: 1.0,
+                    volume: 1.0,
+                    enabled: false
+                }
+            },
+            notes: [],
+            highlights: [],
+            fileParsers: null,
+            voiceReader: null,
+            readingModes: null,
+            translationService: null,
+            hasSeenTutorial: false
+        };
+        
+        // DOM元素缓存
+        const elements = {
+            // 主容器
+            readerContainer: document.getElementById('readerContainer'),
+            articleContent: document.getElementById('articleContent'),
+            emptyReader: document.getElementById('emptyReader'),
+            
+            // 侧边栏
+            sidebar: document.getElementById('sidebar'),
+            fileList: document.getElementById('fileList'),
+            bookmarkList: document.getElementById('bookmarkList'),
+            progressPercent: document.getElementById('progressPercent'),
+            progressFill: document.getElementById('progressFill'),
+            readingTime: document.getElementById('readingTime'),
+            fileName: document.getElementById('fileName'),
+            fileSize: document.getElementById('fileSize'),
+            charCount: document.getElementById('charCount'),
+            fileInfo: document.getElementById('fileInfo'),
+            closeAllFilesBtn: document.getElementById('closeAllFilesBtn'),
+            
+            // 按钮
+            uploadNewBtn: document.getElementById('uploadNewBtn'),
+            settingsBtn: document.getElementById('settingsBtn'),
+            addBookmarkBtn: document.getElementById('addBookmarkBtn'),
+            startUploadBtn: document.getElementById('startUploadBtn'),
+            scrollTopBtn: document.getElementById('scrollTopBtn'),
+            bookmarkBtn: document.getElementById('bookmarkBtn'),
+            sidebarToggleBtn: document.getElementById('sidebarToggleBtn'),
+            mobileMenuBtn: document.getElementById('mobileMenuBtn'),
+            exitImmersiveBtn: document.getElementById('exitImmersiveBtn'),
+            
+            // 设置面板
+            settingsPanel: document.getElementById('settingsPanel'),
+            closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+            themeOptions: document.querySelectorAll('.theme-option'),
+            fontOptions: document.querySelectorAll('.font-option'),
+            fontSizeSlider: document.getElementById('fontSizeSlider'),
+            fontSizeValue: document.getElementById('fontSizeValue'),
+            lineHeightSlider: document.getElementById('lineHeightSlider'),
+            lineHeightValue: document.getElementById('lineHeightValue'),
+            autoSaveToggle: document.getElementById('autoSaveToggle'),
+            showProgressToggle: document.getElementById('showProgressToggle'),
+            
+            // 上传模态框
+            uploadModal: document.getElementById('uploadModal'),
+            uploadArea: document.getElementById('uploadArea'),
+            fileInput: document.getElementById('fileInput'),
+            closeUploadBtn: document.getElementById('closeUploadBtn'),
+            cancelUploadBtn: document.getElementById('cancelUploadBtn'),
+            confirmUploadBtn: document.getElementById('confirmUploadBtn'),
+            selectedFileCount: document.getElementById('selectedFileCount'),
+            selectedTotalSize: document.getElementById('selectedTotalSize'),
+            selectedFileInfo: document.getElementById('selectedFileInfo'),
+            
+            // 语音控制面板
+            voiceControlPanel: document.getElementById('voiceControlPanel'),
+            playVoiceBtn: document.getElementById('playVoiceBtn'),
+            pauseVoiceBtn: document.getElementById('pauseVoiceBtn'),
+            resumeVoiceBtn: document.getElementById('resumeVoiceBtn'),
+            stopVoiceBtn: document.getElementById('stopVoiceBtn'),
+            closeVoicePanelBtn: document.getElementById('closeVoicePanelBtn'),
+            voiceTypeSelect: document.getElementById('voiceTypeSelect'),
+            voiceRateSlider: document.getElementById('voiceRateSlider'),
+            voiceRateValue: document.getElementById('voiceRateValue'),
+            voicePitchSlider: document.getElementById('voicePitchSlider'),
+            voicePitchValue: document.getElementById('voicePitchValue'),
+            voiceVolumeSlider: document.getElementById('voiceVolumeSlider'),
+            voiceVolumeValue: document.getElementById('voiceVolumeValue'),
+            voiceInfo: document.getElementById('voiceInfo'),
+
+            // 阅读模式切换按钮
+            readingModeControls: document.getElementById('readingModeControls'),
+            immersiveModeBtn: document.getElementById('immersiveModeBtn'),
+            horizontalModeBtn: document.getElementById('horizontalModeBtn'),
+            voiceModeBtn: document.getElementById('voiceModeBtn'),
+            
+            // 更多功能按钮
+            moreFeaturesContainer: document.getElementById('moreFeaturesContainer'),
+            moreFeaturesBtn: document.getElementById('moreFeaturesBtn'),
+            moreFeaturesPanel: document.getElementById('moreFeaturesPanel'),
+            highlightBtn: document.getElementById('highlightBtn'),
+            translationBtn: document.getElementById('translationBtn'),
+            noteBtn: document.getElementById('noteBtn'),
+            tocBtn: document.getElementById('tocBtn'),
+            
+            // 高亮标记面板
+            highlightPanel: document.getElementById('highlightPanel'),
+            closeHighlightBtn: document.getElementById('closeHighlightBtn'),
+            clearHighlightsBtn: document.getElementById('clearHighlightsBtn'),
+            
+            // 翻译面板
+            translationPanel: document.getElementById('translationPanel'),
+            closeTranslationBtn: document.getElementById('closeTranslationBtn'),
+            sourceLangSelect: document.getElementById('sourceLangSelect'),
+            targetLangSelect: document.getElementById('targetLangSelect'),
+            translateBtn: document.getElementById('translateBtn'),
+            translationContent: document.getElementById('translationContent'),
+            
+            // 笔记面板
+            notePanel: document.getElementById('notePanel'),
+            closeNoteBtn: document.getElementById('closeNoteBtn'),
+            noteContent: document.getElementById('noteContent'),
+            saveNoteBtn: document.getElementById('saveNoteBtn'),
+            loadNoteBtn: document.getElementById('loadNoteBtn'),
+            
+            // 目录面板
+            tocPanel: document.getElementById('tocPanel'),
+            closeTocBtn: document.getElementById('closeTocBtn'),
+            tocList: document.getElementById('tocList'),
+            
+            // 教程模态框
+            tutorialModal: document.getElementById('tutorialModal'),
+            prevTutorialBtn: document.getElementById('prevTutorialBtn'),
+            nextTutorialBtn: document.getElementById('nextTutorialBtn'),
+            skipTutorialBtn: document.getElementById('skipTutorialBtn'),
+            tutorialDots: document.querySelectorAll('.tutorial-dot'),
+            
+            // 遮罩层
+            overlay: document.getElementById('overlay')
+        };
+        
+        // 教程管理器
+        const TutorialManager = {
+            currentSlide: 1,
+            totalSlides: 3,
+            
+            init() {
+                this.bindEvents();
+            },
+            
+            bindEvents() {
+                elements.prevTutorialBtn.addEventListener('click', () => this.prevSlide());
+                elements.nextTutorialBtn.addEventListener('click', () => this.nextSlide());
+                elements.skipTutorialBtn.addEventListener('click', () => this.skipTutorial());
+                
+                // 教程点点击
+                elements.tutorialDots.forEach(dot => {
+                    dot.addEventListener('click', () => {
+                        const slideNum = parseInt(dot.dataset.slide);
+                        this.goToSlide(slideNum);
+                    });
+                });
+            },
+            
+            showTutorial() {
+                elements.tutorialModal.classList.add('active');
+                this.updateButtons();
+            },
+            
+            hideTutorial() {
+                elements.tutorialModal.classList.remove('active');
+                localStorage.setItem('hasSeenTutorial', 'true');
+                AppState.hasSeenTutorial = true;
+            },
+            
+            prevSlide() {
+                if (this.currentSlide > 1) {
+                    this.currentSlide--;
+                    this.updateSlide();
+                }
+            },
+            
+            nextSlide() {
+                if (this.currentSlide < this.totalSlides) {
+                    this.currentSlide++;
+                    this.updateSlide();
+                }
+            },
+            
+            goToSlide(slideNum) {
+                if (slideNum >= 1 && slideNum <= this.totalSlides) {
+                    this.currentSlide = slideNum;
+                    this.updateSlide();
+                }
+            },
+            
+            updateSlide() {
+                // 隐藏所有幻灯片
+                document.querySelectorAll('.tutorial-slide').forEach(slide => {
+                    slide.classList.remove('active');
+                });
+                
+                // 显示当前幻灯片
+                const currentSlide = document.getElementById(`slide${this.currentSlide}`);
+                if (currentSlide) {
+                    currentSlide.classList.add('active');
+                }
+                
+                // 更新教程点
+                elements.tutorialDots.forEach(dot => {
+                    const slideNum = parseInt(dot.dataset.slide);
+                    if (slideNum === this.currentSlide) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+                
+                this.updateButtons();
+            },
+            
+            updateButtons() {
+                // 更新上一步按钮
+                elements.prevTutorialBtn.style.display = this.currentSlide > 1 ? 'inline-block' : 'none';
+                
+                // 更新下一步/跳过按钮
+                if (this.currentSlide === this.totalSlides) {
+                    elements.nextTutorialBtn.style.display = 'none';
+                    elements.skipTutorialBtn.style.display = 'inline-block';
+                } else {
+                    elements.nextTutorialBtn.style.display = 'inline-block';
+                    elements.skipTutorialBtn.style.display = 'none';
+                }
+            },
+            
+            skipTutorial() {
+                this.hideTutorial();
+            }
+        };
+        
+        // 初始化应用
+        function initApp() {
+            // 初始化新模块
+            AppState.fileParsers = new FileParsers();
+            AppState.voiceReader = new VoiceReader();
+            AppState.readingModes = new ReadingModes();
+            AppState.translationService = new TranslationService();
+            
+            // 初始化教程管理器
+            TutorialManager.init();
+            
+            // 从本地存储加载数据
+            loadFromLocalStorage();
+            
+            // 检查是否显示教程
+            AppState.hasSeenTutorial = localStorage.getItem('hasSeenTutorial') === 'true';
+            
+            // 应用保存的设置
+            applySettings();
+            
+            // 绑定事件监听器
+            bindEvents();
+            
+            // 更新UI
+            updateUI();
+            
+            // 检查语音支持并更新UI
+            checkAndUpdateVoiceSupport();
+            
+            // 延迟显示教程（如果是第一次）
+            setTimeout(() => {
+                if (!AppState.hasSeenTutorial) {
+                    TutorialManager.showTutorial();
+                }
+            }, 1000);
+        }
+        
+        // 检查语音支持并更新UI
+        function checkAndUpdateVoiceSupport() {
+            const voiceStatus = AppState.voiceReader.getStatus();
+            
+            if (!voiceStatus.supported) {
+                elements.voiceModeBtn.style.display = 'none';
+                console.warn('语音朗读功能不可用，已隐藏语音按钮');
+                
+                // 在移动端，调整按钮位置以避免空隙
+                if (window.innerWidth <= 768) {
+                    elements.readingModeControls.style.bottom = '90px';
+                }
+            } else {
+                // 初始化语音设置
+                setTimeout(() => {
+                    updateVoiceSettingsUI();
+                }, 1000);
+            }
+        }
+        
+        // 绑定所有事件
+        function bindEvents() {
+            // 文件上传相关
+            elements.uploadNewBtn.addEventListener('click', showUploadModal);
+            elements.startUploadBtn.addEventListener('click', showUploadModal);
+            elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
+            elements.confirmUploadBtn.addEventListener('click', () => elements.fileInput.click());
+            elements.fileInput.addEventListener('change', handleFileSelect);
+            elements.cancelUploadBtn.addEventListener('click', hideUploadModal);
+            elements.closeUploadBtn.addEventListener('click', hideUploadModal);
+            elements.closeAllFilesBtn.addEventListener('click', closeAllFiles);
+            
+            // 拖拽上传
+            elements.uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                elements.uploadArea.style.backgroundColor = 'rgba(212, 185, 150, 0.1)';
+                elements.uploadArea.style.borderColor = 'var(--text-color)';
+            });
+            
+            elements.uploadArea.addEventListener('dragleave', () => {
+                elements.uploadArea.style.backgroundColor = '';
+                elements.uploadArea.style.borderColor = 'var(--accent-color)';
+            });
+            
+            elements.uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                elements.uploadArea.style.backgroundColor = '';
+                elements.uploadArea.style.borderColor = 'var(--accent-color)';
+                
+                if (e.dataTransfer.files.length) {
+                    const files = Array.from(e.dataTransfer.files);
+                    handleMultipleFiles(files);
+                }
+            });
+            
+            // 设置面板相关
+            elements.settingsBtn.addEventListener('click', showSettingsPanel);
+            elements.closeSettingsBtn.addEventListener('click', hideSettingsPanel);
+            
+            // 主题选择
+            elements.themeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    elements.themeOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    AppState.settings.theme = this.dataset.theme;
+                    
+                    // 如果是夜间模式，更新nightMode设置
+                    if (this.dataset.theme === 'dark') {
+                        AppState.settings.nightMode = true;
+                    } else {
+                        AppState.settings.nightMode = false;
+                    }
+                    
+                    applyTheme();
+                    saveToLocalStorage();
+                });
+            });
+            
+            // 字体选择
+            elements.fontOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    elements.fontOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    AppState.settings.fontType = this.dataset.font;
+                    applyFontFamily();
+                    saveToLocalStorage();
+                });
+            });
+            
+            // 字体大小滑块
+            elements.fontSizeSlider.addEventListener('input', function() {
+                AppState.settings.fontSize = parseFloat(this.value);
+                elements.fontSizeValue.textContent = `${this.value}rem`;
+                applyFontSize();
+                saveToLocalStorage();
+            });
+            
+            // 行高滑块
+            elements.lineHeightSlider.addEventListener('input', function() {
+                AppState.settings.lineHeight = parseFloat(this.value);
+                elements.lineHeightValue.textContent = this.value;
+                applyLineHeight();
+                saveToLocalStorage();
+            });
+            
+            // 切换开关
+            elements.autoSaveToggle.addEventListener('change', function() {
+                AppState.settings.autoSave = this.checked;
+                saveToLocalStorage();
+            });
+            
+            elements.showProgressToggle.addEventListener('change', function() {
+                AppState.settings.showProgress = this.checked;
+                updateProgressUI();
+                saveToLocalStorage();
+            });
+            
+            // 阅读控制按钮
+            elements.scrollTopBtn.addEventListener('click', () => {
+                elements.readerContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            
+            elements.bookmarkBtn.addEventListener('click', addBookmarkAtCurrentPosition);
+            elements.addBookmarkBtn.addEventListener('click', addBookmarkAtCurrentPosition);
+            
+            elements.sidebarToggleBtn.addEventListener('click', toggleSidebar);
+            elements.mobileMenuBtn.addEventListener('click', toggleSidebar);
+            
+            // 沉浸式模式退出按钮
+            elements.exitImmersiveBtn.addEventListener('click', () => {
+                AppState.readingModes.switchToMode('vertical');
+            });
+            
+            // 语音控制相关
+            elements.voiceModeBtn.addEventListener('click', toggleVoiceControlPanel);
+            elements.closeVoicePanelBtn.addEventListener('click', hideVoiceControlPanel);
+            elements.playVoiceBtn.addEventListener('click', startVoiceReading);
+            elements.pauseVoiceBtn.addEventListener('click', pauseVoiceReading);
+            elements.resumeVoiceBtn.addEventListener('click', resumeVoiceReading);
+            elements.stopVoiceBtn.addEventListener('click', stopVoiceReading);
+
+            // 语音设置
+            elements.voiceTypeSelect.addEventListener('change', function() {
+                AppState.settings.voiceSettings.voiceType = this.value;
+                saveToLocalStorage();
+            });
+
+            elements.voiceRateSlider.addEventListener('input', function() {
+                AppState.settings.voiceSettings.rate = parseFloat(this.value);
+                elements.voiceRateValue.textContent = `${this.value}x`;
+                saveToLocalStorage();
+            });
+
+            elements.voicePitchSlider.addEventListener('input', function() {
+                AppState.settings.voiceSettings.pitch = parseFloat(this.value);
+                elements.voicePitchValue.textContent = this.value;
+                saveToLocalStorage();
+            });
+            
+            elements.voiceVolumeSlider.addEventListener('input', function() {
+                AppState.settings.voiceSettings.volume = parseFloat(this.value);
+                elements.voiceVolumeValue.textContent = `${Math.round(this.value * 100)}%`;
+                saveToLocalStorage();
+            });
+
+            // 阅读模式切换
+            elements.immersiveModeBtn.addEventListener('click', toggleImmersiveMode);
+            elements.horizontalModeBtn.addEventListener('click', toggleHorizontalMode);
+
+            // 更多功能按钮
+            elements.moreFeaturesBtn.addEventListener('click', toggleMoreFeatures);
+            elements.highlightBtn.addEventListener('click', toggleHighlightPanel);
+            elements.translationBtn.addEventListener('click', toggleTranslationPanel);
+            elements.noteBtn.addEventListener('click', toggleNotePanel);
+            elements.tocBtn.addEventListener('click', toggleTocPanel);
+            
+            // 高亮标记
+            elements.closeHighlightBtn.addEventListener('click', hideHighlightPanel);
+            elements.clearHighlightsBtn.addEventListener('click', clearAllHighlights);
+            document.querySelectorAll('#highlightPanel .voice-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const color = this.dataset.color;
+                    highlightSelectedText(color);
+                });
+            });
+            
+            // 翻译功能
+            elements.closeTranslationBtn.addEventListener('click', hideTranslationPanel);
+            elements.translateBtn.addEventListener('click', translateSelectedText);
+            
+            // 笔记功能
+            elements.closeNoteBtn.addEventListener('click', hideNotePanel);
+            elements.saveNoteBtn.addEventListener('click', saveNote);
+            elements.loadNoteBtn.addEventListener('click', loadNote);
+            
+            // 目录功能
+            elements.closeTocBtn.addEventListener('click', hideTocPanel);
+            
+            // 选中文本朗读
+            document.addEventListener('dblclick', function(e) {
+                const selection = window.getSelection();
+                if (selection.toString().trim()) {
+                    startVoiceReadingForSelection(selection.toString());
+                }
+            });
+            
+            // 遮罩层点击
+            elements.overlay.addEventListener('click', () => {
+                hideSettingsPanel();
+                hideUploadModal();
+                hideVoiceControlPanel();
+                hideHighlightPanel();
+                hideTranslationPanel();
+                hideNotePanel();
+                hideTocPanel();
+                hideMoreFeatures();
+                elements.sidebar.classList.remove('active');
+                elements.overlay.classList.remove('active');
+            });
+            
+            // 阅读器滚动事件
+            elements.readerContainer.addEventListener('scroll', updateReadingProgress);
+            
+            // 阅读时间跟踪
+            startReadingTimer();
+            
+            // 窗口大小变化
+            window.addEventListener('resize', handleResize);
+            
+            // ESC键退出各种模式
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    hideAllPanels();
+                    hideMoreFeatures();
+                    
+                    if (AppState.readingModes.currentMode === 'immersive') {
+                        AppState.readingModes.switchToMode('vertical');
+                    }
+                }
+            });
+            
+            // 点击页面其他地方隐藏更多功能面板
+            document.addEventListener('click', (e) => {
+                if (!elements.moreFeaturesContainer.contains(e.target) && 
+                    !elements.moreFeaturesBtn.contains(e.target)) {
+                    hideMoreFeatures();
+                }
+            });
+        }
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            if (e.target.files.length) {
+                const files = Array.from(e.target.files);
+                handleMultipleFiles(files);
+            }
+        }
+        
+        // 处理多个文件
+        async function handleMultipleFiles(files) {
+            // 过滤支持的文件类型
+            const validExts = ['txt', 'md', 'markdown', 'pdf', 'docx', 'epub', 'doc', 'rtf'];
+            const validFiles = files.filter(file => {
+                const fileExt = file.name.split('.').pop().toLowerCase();
+                return validExts.includes(fileExt);
+            });
+            
+            if (validFiles.length === 0) {
+                alert('请上传支持的文件格式：TXT、Markdown、PDF、DOCX、EPUB、DOC、RTF');
+                return;
+            }
+            
+            // 显示加载提示
+            showNotification(`正在加载 ${validFiles.length} 个文件...`);
+            
+            // 更新上传模态框显示
+            updateUploadModalInfo(validFiles);
+            
+            // 处理每个文件
+            for (const file of validFiles) {
+                await handleSingleFile(file);
+            }
+            
+            hideUploadModal();
+            showNotification(`成功加载 ${validFiles.length} 个文件`);
+        }
+        
+        // 更新上传模态框信息
+        function updateUploadModalInfo(files) {
+            const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+            elements.selectedFileCount.textContent = `${files.length} 个文件`;
+            elements.selectedTotalSize.textContent = formatFileSize(totalSize);
+        }
+        
+        // 处理单个文件（修复：上传后自动显示新文件）
+        async function handleSingleFile(file) {
+            // 检查是否已存在同名文件
+            const existingIndex = AppState.files.findIndex(f => f.name === file.name);
+            if (existingIndex !== -1) {
+                // 询问是否替换
+                if (!confirm(`文件 "${file.name}" 已存在，是否替换？`)) {
+                    return;
+                }
+                // 移除已存在的文件
+                AppState.files.splice(existingIndex, 1);
+                if (AppState.currentFileIndex >= existingIndex) {
+                    AppState.currentFileIndex = Math.max(0, AppState.currentFileIndex - 1);
+                }
+            }
+            
+            // 创建文件对象
+            const fileObj = {
+                id: Date.now() + Math.random(),
+                name: file.name,
+                size: file.size,
+                file: file,
+                content: null,
+                bookmarks: [],
+                readingProgress: 0,
+                readingTime: 0,
+                notes: [],
+                highlights: []
+            };
+            
+            try {
+                // 使用文件解析器解析内容
+                const content = await AppState.fileParsers.parseFile(file);
+                fileObj.content = content;
+                fileObj.charCount = content.length;
+                
+                // 添加到文件列表
+                AppState.files.push(fileObj);
+                
+                // 修复：始终切换到最新上传的文件
+                AppState.currentFileIndex = AppState.files.length - 1;
+                displayFileContent(fileObj);
+                
+                // 更新UI
+                updateFileListUI();
+                updateUI();
+                
+            } catch (error) {
+                console.error('文件处理错误:', error);
+                showNotification(`文件 "${file.name}" 处理失败: ${error.message}`);
+            }
+        }
+        
+        // 显示文件内容
+        function displayFileContent(fileObj) {
+            // 隐藏空状态
+            elements.emptyReader.classList.add('hidden');
+            
+            // 提取标题
+            let title = fileObj.name;
+            let content = fileObj.content || '';
+            
+            if (content) {
+                const lines = content.split('\n');
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line) {
+                        // 尝试从Markdown中提取标题
+                        if (fileObj.name.endsWith('.md') || fileObj.name.endsWith('.markdown')) {
+                            if (line.startsWith('# ')) {
+                                title = line.substring(2).trim();
+                                break;
+                            }
+                        }
+                        // 使用第一行非空文本作为标题
+                        title = line.substring(0, 100);
+                        break;
+                    }
+                }
+            }
+            
+            // 生成HTML内容
+            let htmlContent = `<h1 class="article-title">${title}</h1><div class="article-body">`;
+            
+            if (fileObj.name.endsWith('.md') || fileObj.name.endsWith('.markdown')) {
+                htmlContent += parseMarkdown(content);
+            } else {
+                htmlContent += parseText(content);
+            }
+            
+            htmlContent += '</div>';
+            
+            elements.articleContent.innerHTML = htmlContent;
+            
+            // 应用高亮标记
+            applyHighlights(fileObj.highlights);
+            
+            // 滚动到顶部
+            elements.readerContainer.scrollTop = 0;
+            
+            // 应用当前字体设置
+            applyFontSize();
+            applyLineHeight();
+            applyFontFamily();
+            
+            // 更新书签
+            AppState.bookmarks = fileObj.bookmarks || [];
+            updateBookmarksUI();
+            
+            // 更新进度
+            AppState.readingProgress = fileObj.readingProgress || 0;
+            updateProgressUI();
+            
+            // 更新文件信息
+            updateFileInfoUI(fileObj);
+            
+            // 更新目录
+            updateTocUI();
+        }
+        
+        // 解析Markdown
+        function parseMarkdown(content) {
+            return AppState.fileParsers.parseMarkdown(content);
+        }
+        
+        // 解析纯文本
+        function parseText(content) {
+            let lines = content.split('\n');
+            let result = [];
+            let paragraph = [];
+            
+            for (let line of lines) {
+                line = line.trim();
+                
+                if (line === '') {
+                    if (paragraph.length > 0) {
+                        result.push('<p>' + paragraph.join(' ') + '</p>');
+                        paragraph = [];
+                    }
+                } else {
+                    paragraph.push(line);
+                }
+            }
+            
+            if (paragraph.length > 0) {
+                result.push('<p>' + paragraph.join(' ') + '</p>');
+            }
+            
+            return result.join('\n');
+        }
+        
+        // 更新文件列表UI
+        function updateFileListUI() {
+            elements.fileList.innerHTML = '';
+            
+            if (AppState.files.length === 0) {
+                elements.fileList.innerHTML = '<li style="text-align: center; color: var(--light-text); padding: 20px;">暂无打开的文件</li>';
+                return;
+            }
+            
+            AppState.files.forEach((file, index) => {
+                const li = document.createElement('li');
+                li.className = `file-item ${index === AppState.currentFileIndex ? 'active' : ''}`;
+                li.dataset.index = index;
+                
+                li.innerHTML = `
+                    <div class="file-name" title="${file.name}">${file.name}</div>
+                    <button class="file-close" data-index="${index}" title="关闭文件">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                // 点击文件切换
+                li.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('file-close')) {
+                        switchToFile(index);
+                    }
+                });
+                
+                // 关闭文件按钮
+                const closeBtn = li.querySelector('.file-close');
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeFile(index);
+                });
+                
+                elements.fileList.appendChild(li);
+            });
+        }
+        
+        // 切换到指定文件
+        function switchToFile(index) {
+            if (index >= 0 && index < AppState.files.length) {
+                AppState.currentFileIndex = index;
+                const file = AppState.files[index];
+                
+                // 更新当前文件的阅读进度和时间
+                if (AppState.files[AppState.currentFileIndex]) {
+                    AppState.files[AppState.currentFileIndex].readingProgress = AppState.readingProgress;
+                    AppState.files[AppState.currentFileIndex].readingTime = AppState.readingTime;
+                }
+                
+                // 切换到新文件
+                AppState.readingProgress = file.readingProgress || 0;
+                AppState.readingTime = file.readingTime || 0;
+                AppState.bookmarks = file.bookmarks || [];
+                
+                displayFileContent(file);
+                updateFileListUI();
+                updateUI();
+                
+                showNotification(`已切换到: ${file.name}`);
+            }
+        }
+        
+        // 关闭文件
+        function closeFile(index) {
+            if (index >= 0 && index < AppState.files.length) {
+                const fileName = AppState.files[index].name;
+                
+                // 保存当前文件的阅读进度
+                if (index === AppState.currentFileIndex && AppState.files[AppState.currentFileIndex]) {
+                    AppState.files[AppState.currentFileIndex].readingProgress = AppState.readingProgress;
+                    AppState.files[AppState.currentFileIndex].readingTime = AppState.readingTime;
+                }
+                
+                // 移除文件
+                AppState.files.splice(index, 1);
+                
+                // 调整当前文件索引
+                if (AppState.currentFileIndex >= index) {
+                    AppState.currentFileIndex = Math.max(0, AppState.currentFileIndex - 1);
+                }
+                
+                // 如果还有文件，显示第一个文件
+                if (AppState.files.length > 0) {
+                    switchToFile(AppState.currentFileIndex);
+                } else {
+                    // 没有文件了，显示空状态
+                    elements.emptyReader.classList.remove('hidden');
+                    elements.articleContent.innerHTML = '';
+                    updateUI();
+                }
+                
+                updateFileListUI();
+                showNotification(`已关闭: ${fileName}`);
+            }
+        }
+        
+        // 关闭所有文件
+        function closeAllFiles() {
+            if (AppState.files.length === 0) return;
+            
+            if (confirm(`确定要关闭所有 ${AppState.files.length} 个文件吗？`)) {
+                AppState.files = [];
+                AppState.currentFileIndex = 0;
+                AppState.bookmarks = [];
+                AppState.readingProgress = 0;
+                AppState.readingTime = 0;
+                
+                elements.emptyReader.classList.remove('hidden');
+                elements.articleContent.innerHTML = '';
+                updateFileListUI();
+                updateUI();
+                
+                showNotification('所有文件已关闭');
+            }
+        }
+        
+        // 添加书签
+        function addBookmarkAtCurrentPosition() {
+            if (AppState.files.length === 0) {
+                alert('请先上传文件');
+                return;
+            }
+            
+            const scrollTop = elements.readerContainer.scrollTop;
+            const scrollHeight = elements.readerContainer.scrollHeight - elements.readerContainer.clientHeight;
+            const positionPercent = scrollHeight > 0 ? Math.round((scrollTop / scrollHeight) * 100) : 0;
+            
+            const bookmarkText = getTextNearPosition(scrollTop);
+            const bookmarkId = Date.now();
+            
+            const bookmark = {
+                id: bookmarkId,
+                position: positionPercent,
+                text: bookmarkText.substring(0, 100) + (bookmarkText.length > 100 ? '...' : ''),
+                timestamp: new Date().toLocaleString(),
+                fileIndex: AppState.currentFileIndex
+            };
+            
+            AppState.bookmarks.push(bookmark);
+            
+            // 保存到当前文件
+            if (AppState.files[AppState.currentFileIndex]) {
+                if (!AppState.files[AppState.currentFileIndex].bookmarks) {
+                    AppState.files[AppState.currentFileIndex].bookmarks = [];
+                }
+                AppState.files[AppState.currentFileIndex].bookmarks.push(bookmark);
+            }
+            
+            updateBookmarksUI();
+            saveToLocalStorage();
+            
+            // 显示提示
+            showNotification(`书签已添加 (${positionPercent}%)`);
+        }
+        
+        // 获取当前位置附近的文本
+        function getTextNearPosition(scrollTop) {
+            const articleBody = document.querySelector('.article-body');
+            if (!articleBody) return '当前位置';
+            
+            const elements = articleBody.querySelectorAll('p, h1, h2, h3, h4, h5, h6');
+            let closestElement = null;
+            let closestDistance = Infinity;
+            
+            elements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const distance = Math.abs(rect.top);
+                
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestElement = el;
+                }
+            });
+            
+            return closestElement ? closestElement.textContent.trim() : '当前位置';
+        }
+        
+        // 更新书签UI
+        function updateBookmarksUI() {
+            elements.bookmarkList.innerHTML = '';
+            
+            // 只显示当前文件的书签
+            const currentFileBookmarks = AppState.bookmarks.filter(
+                bookmark => bookmark.fileIndex === AppState.currentFileIndex
+            );
+            
+            if (currentFileBookmarks.length === 0) {
+                elements.bookmarkList.innerHTML = '<li style="text-align: center; color: var(--light-text); padding: 20px;">暂无书签</li>';
+                return;
+            }
+            
+            currentFileBookmarks.forEach(bookmark => {
+                const li = document.createElement('li');
+                li.className = 'bookmark-item';
+                li.dataset.id = bookmark.id;
+                li.dataset.position = bookmark.position;
+                
+                li.innerHTML = `
+                    <div>
+                        <div style="font-weight: 500;">${bookmark.text}</div>
+                        <div style="font-size: 0.8rem; color: var(--light-text); margin-top: 5px;">${bookmark.timestamp} (${bookmark.position}%)</div>
+                    </div>
+                    <button class="bookmark-delete" data-id="${bookmark.id}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                // 点击书签跳转到位置
+                li.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('bookmark-delete')) {
+                        const position = parseInt(li.dataset.position);
+                        scrollToPosition(position);
+                    }
+                });
+                
+                // 删除书签按钮
+                const deleteBtn = li.querySelector('.bookmark-delete');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteBookmark(bookmark.id);
+                });
+                
+                elements.bookmarkList.appendChild(li);
+            });
+        }
+        
+        // 跳转到指定位置
+        function scrollToPosition(percent) {
+            const scrollHeight = elements.readerContainer.scrollHeight - elements.readerContainer.clientHeight;
+            const targetScrollTop = (percent / 100) * scrollHeight;
+            
+            elements.readerContainer.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth'
+            });
+        }
+        
+        // 删除书签
+        function deleteBookmark(id) {
+            AppState.bookmarks = AppState.bookmarks.filter(bookmark => bookmark.id !== id);
+            
+            // 从当前文件中删除
+            if (AppState.files[AppState.currentFileIndex] && AppState.files[AppState.currentFileIndex].bookmarks) {
+                AppState.files[AppState.currentFileIndex].bookmarks = 
+                    AppState.files[AppState.currentFileIndex].bookmarks.filter(bookmark => bookmark.id !== id);
+            }
+            
+            updateBookmarksUI();
+            saveToLocalStorage();
+            showNotification('书签已删除');
+        }
+        
+        // 更新阅读进度
+        function updateReadingProgress() {
+            const scrollTop = elements.readerContainer.scrollTop;
+            const scrollHeight = elements.readerContainer.scrollHeight - elements.readerContainer.clientHeight;
+            
+            if (scrollHeight > 0) {
+                AppState.readingProgress = Math.round((scrollTop / scrollHeight) * 100);
+                
+                // 保存到当前文件
+                if (AppState.files[AppState.currentFileIndex]) {
+                    AppState.files[AppState.currentFileIndex].readingProgress = AppState.readingProgress;
+                }
+                
+                updateProgressUI();
+            }
+        }
+        
+        // 更新进度UI
+        function updateProgressUI() {
+            elements.progressPercent.textContent = `${AppState.readingProgress}%`;
+            elements.progressFill.style.width = `${AppState.readingProgress}%`;
+            
+            // 根据设置显示/隐藏进度
+            if (AppState.settings.showProgress) {
+                elements.progressFill.style.display = 'block';
+                document.querySelector('.progress-section').style.display = 'block';
+            } else {
+                elements.progressFill.style.display = 'none';
+                document.querySelector('.progress-section').style.display = 'none';
+            }
+        }
+        
+        // 开始阅读计时
+        function startReadingTimer() {
+            AppState.readingStartTime = new Date();
+            
+            // 每分钟更新一次阅读时间
+            setInterval(() => {
+                if (AppState.files.length > 0 && elements.readerContainer.scrollTop > 100) {
+                    AppState.readingTime += 1;
+                    
+                    // 保存到当前文件
+                    if (AppState.files[AppState.currentFileIndex]) {
+                        AppState.files[AppState.currentFileIndex].readingTime = AppState.readingTime;
+                    }
+                    
+                    elements.readingTime.textContent = `${AppState.readingTime}分钟`;
+                    saveToLocalStorage();
+                }
+            }, 60000); // 每分钟
+        }
+        
+        // 更新UI
+        function updateUI() {
+            if (AppState.files.length > 0 && AppState.currentFileIndex < AppState.files.length) {
+                const file = AppState.files[AppState.currentFileIndex];
+                updateFileInfoUI(file);
+            } else {
+                elements.fileName.textContent = '未选择文件';
+                elements.fileSize.textContent = '0 KB';
+                elements.charCount.textContent = '0';
+            }
+            
+            elements.readingTime.textContent = `${AppState.readingTime}分钟`;
+            
+            // 更新设置面板的UI状态
+            updateSettingsUI();
+        }
+        
+        // 更新文件信息UI
+        function updateFileInfoUI(file) {
+            elements.fileName.textContent = file.name;
+            elements.fileSize.textContent = formatFileSize(file.size);
+            elements.charCount.textContent = file.charCount || 0;
+        }
+        
+        // 更新设置面板UI
+        function updateSettingsUI() {
+            // 主题
+            elements.themeOptions.forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.theme === AppState.settings.theme) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // 字体
+            elements.fontOptions.forEach(option => {
+                option.classList.remove('active');
+                if (option.dataset.font === AppState.settings.fontType) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // 滑块值
+            elements.fontSizeSlider.value = AppState.settings.fontSize;
+            elements.fontSizeValue.textContent = `${AppState.settings.fontSize}rem`;
+            
+            elements.lineHeightSlider.value = AppState.settings.lineHeight;
+            elements.lineHeightValue.textContent = AppState.settings.lineHeight;
+            
+            // 切换开关
+            elements.autoSaveToggle.checked = AppState.settings.autoSave;
+            elements.showProgressToggle.checked = AppState.settings.showProgress;
+        }
+        
+        // 应用主题
+        function applyTheme() {
+            const root = document.documentElement;
+            const body = document.body;
+            
+            // 移除所有主题类
+            body.classList.remove('classic-theme', 'parchment-theme', 'paper-theme', 'dark-theme');
+            
+            // 应用新主题
+            switch (AppState.settings.theme) {
+                case 'parchment':
+                    body.classList.add('parchment-theme');
+                    root.style.setProperty('--primary-bg', 'var(--parchment-bg)');
+                    root.style.setProperty('--secondary-bg', 'var(--parchment-secondary)');
+                    root.style.setProperty('--accent-color', 'var(--parchment-accent)');
+                    root.style.setProperty('--text-color', 'var(--parchment-text)');
+                    break;
+                    
+                case 'paper':
+                    body.classList.add('paper-theme');
+                    root.style.setProperty('--primary-bg', 'var(--paper-bg)');
+                    root.style.setProperty('--secondary-bg', 'var(--paper-secondary)');
+                    root.style.setProperty('--accent-color', 'var(--paper-accent)');
+                    root.style.setProperty('--text-color', 'var(--paper-text)');
+                    break;
+                    
+                case 'dark':
+                    body.classList.add('dark-theme');
+                    root.style.setProperty('--primary-bg', 'var(--dark-bg)');
+                    root.style.setProperty('--secondary-bg', 'var(--dark-secondary)');
+                    root.style.setProperty('--accent-color', 'var(--dark-accent)');
+                    root.style.setProperty('--text-color', 'var(--dark-text)');
+                    root.style.setProperty('--light-text', '#999');
+                    root.style.setProperty('--border-color', '#444');
+                    break;
+                    
+                default: // classic
+                    body.classList.add('classic-theme');
+                    root.style.setProperty('--primary-bg', '#f8f4e9');
+                    root.style.setProperty('--secondary-bg', '#f0ebdd');
+                    root.style.setProperty('--accent-color', '#d4b996');
+                    root.style.setProperty('--text-color', '#5a4c3a');
+                    root.style.setProperty('--light-text', '#8a7b68');
+                    root.style.setProperty('--border-color', '#e0d6c2');
+                    break;
+            }
+        }
+        
+        // 应用字体大小
+        function applyFontSize() {
+            const articleBody = document.querySelector('.article-body');
+            if (articleBody) {
+                articleBody.style.fontSize = `${AppState.settings.fontSize}rem`;
+            }
+        }
+        
+        // 应用行高
+        function applyLineHeight() {
+            const articleBody = document.querySelector('.article-body');
+            if (articleBody) {
+                articleBody.style.lineHeight = AppState.settings.lineHeight;
+            }
+        }
+        
+        // 应用字体族
+        function applyFontFamily() {
+            const articleBody = document.querySelector('.article-body');
+            if (articleBody) {
+                switch (AppState.settings.fontType) {
+                    case 'simsun':
+                        articleBody.style.fontFamily = 'SimSun, STSong, "宋体", serif';
+                        break;
+                    case 'kaiti':
+                        articleBody.style.fontFamily = 'KaiTi, STKaiti, "楷体", serif';
+                        break;
+                    case 'arial':
+                        articleBody.style.fontFamily = 'Arial, sans-serif';
+                        break;
+                    case 'sans':
+                        articleBody.style.fontFamily = 'var(--sans-font)';
+                        break;
+                    default:
+                        articleBody.style.fontFamily = 'var(--serif-font)';
+                        break;
+                }
+            }
+        }
+        
+        // 应用所有设置
+        function applySettings() {
+            applyTheme();
+            applyFontSize();
+            applyLineHeight();
+            applyFontFamily();
+            updateProgressUI();
+        }
+        
+        // 更多功能面板
+        function toggleMoreFeatures() {
+            elements.moreFeaturesPanel.classList.toggle('active');
+        }
+        
+        function hideMoreFeatures() {
+            elements.moreFeaturesPanel.classList.remove('active');
+        }
+        
+        // 语音控制面板
+        function toggleVoiceControlPanel() {
+            // 检查语音支持
+            if (!AppState.voiceReader.isSupported()) {
+                showNotification('您的浏览器或应用环境不支持文本朗读功能');
+                return;
+            }
+            
+            hideAllPanels();
+            hideMoreFeatures();
+            elements.voiceControlPanel.classList.toggle('active');
+            if (elements.voiceControlPanel.classList.contains('active')) {
+                updateVoiceSettingsUI();
+                elements.overlay.classList.add('active');
+            } else {
+                elements.overlay.classList.remove('active');
+            }
+        }
+
+        function hideVoiceControlPanel() {
+            elements.voiceControlPanel.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+
+        function startVoiceReading() {
+            if (AppState.files.length === 0) {
+                alert('请先上传文件');
+                return;
+            }
+            
+            // 检查语音支持
+            if (!AppState.voiceReader.isSupported()) {
+                showNotification('您的浏览器或应用环境不支持文本朗读功能');
+                return;
+            }
+            
+            const selection = window.getSelection();
+            if (selection.toString().trim()) {
+                // 朗读选中文本
+                startVoiceReadingForSelection(selection.toString());
+            } else {
+                // 朗读当前页面
+                startVoiceReadingForCurrentPage();
+            }
+        }
+        
+        function startVoiceReadingForSelection(text) {
+            AppState.voiceReader.speak(text, {
+                voiceType: AppState.settings.voiceSettings.voiceType,
+                rate: AppState.settings.voiceSettings.rate,
+                pitch: AppState.settings.voiceSettings.pitch,
+                volume: AppState.settings.voiceSettings.volume,
+                onStart: () => {
+                    showNotification('开始朗读选中文本');
+                },
+                onEnd: () => {
+                    showNotification('朗读完成');
+                },
+                onError: (error) => {
+                    showNotification('朗读失败: ' + error);
+                }
+            });
+        }
+        
+        function startVoiceReadingForCurrentPage() {
+            const articleBody = document.querySelector('.article-body');
+            if (!articleBody) return false;
+            
+            const text = articleBody.textContent.substring(0, 5000); // 限制长度
+            
+            AppState.voiceReader.speak(text, {
+                voiceType: AppState.settings.voiceSettings.voiceType,
+                rate: AppState.settings.voiceSettings.rate,
+                pitch: AppState.settings.voiceSettings.pitch,
+                volume: AppState.settings.voiceSettings.volume,
+                onStart: () => {
+                    showNotification('开始朗读当前页面');
+                },
+                onEnd: () => {
+                    showNotification('朗读完成');
+                },
+                onError: (error) => {
+                    showNotification('朗读失败: ' + error);
+                }
+            });
+        }
+
+        function pauseVoiceReading() {
+            AppState.voiceReader.pause();
+            showNotification('朗读已暂停');
+        }
+
+        function resumeVoiceReading() {
+            AppState.voiceReader.resume();
+            showNotification('朗读已继续');
+        }
+
+        function stopVoiceReading() {
+            AppState.voiceReader.stop();
+            showNotification('朗读已停止');
+        }
+
+        // 更新语音设置UI
+        function updateVoiceSettingsUI() {
+            elements.voiceTypeSelect.value = AppState.settings.voiceSettings.voiceType;
+            elements.voiceRateSlider.value = AppState.settings.voiceSettings.rate;
+            elements.voiceRateValue.textContent = `${AppState.settings.voiceSettings.rate}x`;
+            elements.voicePitchSlider.value = AppState.settings.voiceSettings.pitch;
+            elements.voicePitchValue.textContent = AppState.settings.voiceSettings.pitch;
+            elements.voiceVolumeSlider.value = AppState.settings.voiceSettings.volume;
+            elements.voiceVolumeValue.textContent = `${Math.round(AppState.settings.voiceSettings.volume * 100)}%`;
+        }
+
+        // 阅读模式切换
+        function toggleImmersiveMode() {
+            if (AppState.readingModes.currentMode === 'immersive') {
+                AppState.readingModes.switchToMode('vertical');
+                elements.immersiveModeBtn.classList.remove('active');
+            } else {
+                AppState.readingModes.switchToMode('immersive');
+                elements.immersiveModeBtn.classList.add('active');
+                elements.horizontalModeBtn.classList.remove('active');
+                showNotification('已进入沉浸式阅读模式');
+            }
+        }
+
+        function toggleHorizontalMode() {
+            if (AppState.readingModes.currentMode === 'horizontal') {
+                AppState.readingModes.switchToMode('vertical');
+                elements.horizontalModeBtn.classList.remove('active');
+            } else {
+                AppState.readingModes.switchToMode('horizontal');
+                elements.horizontalModeBtn.classList.add('active');
+                elements.immersiveModeBtn.classList.remove('active');
+                showNotification('已进入横向翻页模式');
+            }
+        }
+        
+        // 高亮标记功能
+        function toggleHighlightPanel() {
+            hideAllPanels();
+            hideMoreFeatures();
+            elements.highlightPanel.classList.toggle('active');
+            if (elements.highlightPanel.classList.contains('active')) {
+                elements.overlay.classList.add('active');
+            } else {
+                elements.overlay.classList.remove('active');
+            }
+        }
+        
+        function hideHighlightPanel() {
+            elements.highlightPanel.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+        
+        function highlightSelectedText(color) {
+            const selection = window.getSelection();
+            if (!selection.toString().trim()) {
+                showNotification('请先选中文本');
+                return;
+            }
+            
+            const range = selection.getRangeAt(0);
+            const span = document.createElement('span');
+            span.className = `highlight ${color}`;
+            span.textContent = selection.toString();
+            
+            range.deleteContents();
+            range.insertNode(span);
+            
+            // 保存高亮
+            const highlight = {
+                id: Date.now(),
+                color: color,
+                text: selection.toString(),
+                timestamp: new Date().toLocaleString(),
+                fileIndex: AppState.currentFileIndex
+            };
+            
+            if (!AppState.files[AppState.currentFileIndex].highlights) {
+                AppState.files[AppState.currentFileIndex].highlights = [];
+            }
+            AppState.files[AppState.currentFileIndex].highlights.push(highlight);
+            
+            // 清除选择
+            selection.removeAllRanges();
+            
+            showNotification('文本已高亮标记');
+            hideHighlightPanel();
+        }
+        
+        function applyHighlights(highlights) {
+            if (!highlights || highlights.length === 0) return;
+            
+            const articleBody = document.querySelector('.article-body');
+            if (!articleBody) return;
+            
+            const text = articleBody.textContent;
+            
+            // 简单的高亮应用逻辑
+            highlights.forEach(highlight => {
+                if (text.includes(highlight.text)) {
+                    // 在实际应用中，这里应该更精确地定位和标记文本
+                    // 这里只是一个简单的示例
+                }
+            });
+        }
+        
+        function clearAllHighlights() {
+            const highlights = document.querySelectorAll('.highlight');
+            highlights.forEach(highlight => {
+                const parent = highlight.parentNode;
+                parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+                parent.normalize();
+            });
+            
+            // 清除保存的高亮
+            if (AppState.files[AppState.currentFileIndex]) {
+                AppState.files[AppState.currentFileIndex].highlights = [];
+            }
+            
+            showNotification('已清除所有高亮标记');
+            hideHighlightPanel();
+        }
+        
+        // 翻译功能
+        function toggleTranslationPanel() {
+            hideAllPanels();
+            hideMoreFeatures();
+            elements.translationPanel.classList.toggle('active');
+            if (elements.translationPanel.classList.contains('active')) {
+                elements.overlay.classList.add('active');
+            } else {
+                elements.overlay.classList.remove('active');
+            }
+        }
+        
+        function hideTranslationPanel() {
+            elements.translationPanel.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+        
+        async function translateSelectedText() {
+            const selection = window.getSelection();
+            if (!selection.toString().trim()) {
+                showNotification('请先选中要翻译的文本');
+                return;
+            }
+            
+            const text = selection.toString();
+            const sourceLang = elements.sourceLangSelect.value;
+            const targetLang = elements.targetLangSelect.value;
+            
+            showNotification('正在翻译...');
+            
+            try {
+                const result = await AppState.translationService.translate(text, sourceLang, targetLang);
+                elements.translationContent.innerHTML = `
+                    <div><strong>原文:</strong> ${result.original}</div>
+                    <div style="margin-top: 10px;"><strong>译文:</strong> ${result.translated}</div>
+                `;
+                showNotification('翻译完成');
+            } catch (error) {
+                elements.translationContent.innerHTML = `<div style="color: red;">翻译失败: ${error.message}</div>`;
+                showNotification('翻译失败');
+            }
+        }
+        
+        // 笔记功能
+        function toggleNotePanel() {
+            hideAllPanels();
+            hideMoreFeatures();
+            elements.notePanel.classList.toggle('active');
+            if (elements.notePanel.classList.contains('active')) {
+                // 加载当前文件的笔记
+                loadNoteForCurrentFile();
+                elements.overlay.classList.add('active');
+            } else {
+                elements.overlay.classList.remove('active');
+            }
+        }
+        
+        function hideNotePanel() {
+            elements.notePanel.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+        
+        function saveNote() {
+            const noteContent = elements.noteContent.value.trim();
+            if (!noteContent) {
+                showNotification('笔记内容不能为空');
+                return;
+            }
+            
+            const note = {
+                id: Date.now(),
+                content: noteContent,
+                timestamp: new Date().toLocaleString(),
+                fileIndex: AppState.currentFileIndex
+            };
+            
+            if (!AppState.files[AppState.currentFileIndex].notes) {
+                AppState.files[AppState.currentFileIndex].notes = [];
+            }
+            
+            // 添加到笔记列表
+            AppState.files[AppState.currentFileIndex].notes.push(note);
+            
+            // 保存到本地存储
+            saveToLocalStorage();
+            
+            showNotification('笔记已保存');
+            hideNotePanel();
+        }
+        
+        function loadNote() {
+            if (!AppState.files[AppState.currentFileIndex] || 
+                !AppState.files[AppState.currentFileIndex].notes || 
+                AppState.files[AppState.currentFileIndex].notes.length === 0) {
+                showNotification('当前文件没有保存的笔记');
+                return;
+            }
+            
+            const notes = AppState.files[AppState.currentFileIndex].notes;
+            const latestNote = notes[notes.length - 1];
+            elements.noteContent.value = latestNote.content;
+            
+            showNotification('已加载最新笔记');
+        }
+        
+        function loadNoteForCurrentFile() {
+            if (AppState.files[AppState.currentFileIndex] && 
+                AppState.files[AppState.currentFileIndex].notes && 
+                AppState.files[AppState.currentFileIndex].notes.length > 0) {
+                const notes = AppState.files[AppState.currentFileIndex].notes;
+                const latestNote = notes[notes.length - 1];
+                elements.noteContent.value = latestNote.content;
+            } else {
+                elements.noteContent.value = '';
+            }
+        }
+        
+        // 目录功能
+        function toggleTocPanel() {
+            hideAllPanels();
+            hideMoreFeatures();
+            elements.tocPanel.classList.toggle('active');
+            if (elements.tocPanel.classList.contains('active')) {
+                updateTocUI();
+                elements.overlay.classList.add('active');
+            } else {
+                elements.overlay.classList.remove('active');
+            }
+        }
+        
+        function hideTocPanel() {
+            elements.tocPanel.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+        
+        function updateTocUI() {
+            const tocList = document.getElementById('tocList');
+            const articleBody = document.querySelector('.article-body');
+            
+            if (!articleBody) {
+                tocList.innerHTML = '<li class="toc-item">暂无目录信息</li>';
+                return;
+            }
+            
+            const headings = articleBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            
+            if (headings.length === 0) {
+                tocList.innerHTML = '<li class="toc-item">暂无目录信息</li>';
+                return;
+            }
+            
+            tocList.innerHTML = '';
+            
+            headings.forEach((heading, index) => {
+                const li = document.createElement('li');
+                li.className = 'toc-item';
+                li.textContent = heading.textContent;
+                li.style.paddingLeft = `${(parseInt(heading.tagName[1]) - 1) * 15}px`;
+                li.style.cursor = 'pointer';
+                
+                li.addEventListener('click', () => {
+                    heading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    hideTocPanel();
+                });
+                
+                tocList.appendChild(li);
+            });
+        }
+        
+        // 显示上传模态框
+        function showUploadModal() {
+            elements.uploadModal.classList.add('active');
+            elements.overlay.classList.add('active');
+            elements.fileInput.value = ''; // 清空文件输入
+            updateUploadModalInfo([]); // 重置显示信息
+        }
+        
+        // 隐藏上传模态框
+        function hideUploadModal() {
+            elements.uploadModal.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+        
+        // 显示设置面板
+        function showSettingsPanel() {
+            hideAllPanels();
+            hideMoreFeatures();
+            elements.settingsPanel.classList.add('active');
+            elements.overlay.classList.add('active');
+        }
+        
+        // 隐藏设置面板
+        function hideSettingsPanel() {
+            elements.settingsPanel.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+        
+        // 切换侧边栏
+        function toggleSidebar() {
+            elements.sidebar.classList.toggle('active');
+            elements.overlay.classList.toggle('active');
+        }
+        
+        // 处理窗口大小变化
+        function handleResize() {
+            if (window.innerWidth > 992) {
+                elements.sidebar.classList.remove('active');
+                elements.overlay.classList.remove('active');
+            }
+        }
+        
+        // 隐藏所有面板
+        function hideAllPanels() {
+            elements.settingsPanel.classList.remove('active');
+            elements.voiceControlPanel.classList.remove('active');
+            elements.highlightPanel.classList.remove('active');
+            elements.translationPanel.classList.remove('active');
+            elements.notePanel.classList.remove('active');
+            elements.tocPanel.classList.remove('active');
+            elements.overlay.classList.remove('active');
+        }
+        
+        // 保存到本地存储
+        function saveToLocalStorage() {
+            if (AppState.settings.autoSave) {
+                const data = {
+                    files: AppState.files.map(file => ({
+                        id: file.id,
+                        name: file.name,
+                        size: file.size,
+                        charCount: file.charCount,
+                        bookmarks: file.bookmarks,
+                        readingProgress: file.readingProgress,
+                        readingTime: file.readingTime,
+                        notes: file.notes,
+                        highlights: file.highlights
+                    })),
+                    currentFileIndex: AppState.currentFileIndex,
+                    bookmarks: AppState.bookmarks,
+                    readingProgress: AppState.readingProgress,
+                    readingTime: AppState.readingTime,
+                    settings: AppState.settings
+                };
+                
+                localStorage.setItem('yanlunReaderData', JSON.stringify(data));
+            }
+        }
+        
+        // 从本地存储加载
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('yanlunReaderData');
+            
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    
+                    if (data.files) {
+                        // 注意：这里只加载元数据，不加载文件对象本身
+                        // 文件需要在重新上传时重新解析
+                        AppState.files = data.files;
+                    }
+                    if (data.currentFileIndex !== undefined) AppState.currentFileIndex = data.currentFileIndex;
+                    if (data.bookmarks) AppState.bookmarks = data.bookmarks;
+                    if (data.readingProgress) AppState.readingProgress = data.readingProgress;
+                    if (data.readingTime) AppState.readingTime = data.readingTime;
+                    if (data.settings) AppState.settings = { ...AppState.settings, ...data.settings };
+
+                } catch (e) {
+                    console.error('加载本地存储数据失败:', e);
+                }
+            }
+        }
+        
+        // 显示通知
+        function showNotification(message) {
+            // 移除旧的通知
+            const oldNotification = document.querySelector('.notification');
+            if (oldNotification) oldNotification.remove();
+            
+            // 创建新通知
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            
+            // 样式
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = 'var(--accent-color)';
+            notification.style.color = 'white';
+            notification.style.padding = '12px 24px';
+            notification.style.borderRadius = '8px';
+            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            notification.style.zIndex = '1000';
+            notification.style.fontSize = '0.9rem';
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.3s';
+            
+            document.body.appendChild(notification);
+            
+            // 显示
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // 3秒后消失
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 初始化应用
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
