@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>严论阅读器 - 感恩回馈抽奖活动</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 沿用严论阅读器的主题变量 */
+            --primary-bg: #f8f4e9;
+            --secondary-bg: #f0ebdd;
+            --accent-color: #d4b996;
+            --text-color: #5a4c3a;
+            --light-text: #8a7b68;
+            --border-color: #e0d6c2;
+            --shadow: 0 4px 12px rgba(90, 76, 58, 0.08);
+            
+            /* 奖品颜色 */
+            --grand-prize: #e63946;
+            --first-prize: #f4a261;
+            --second-prize: #2a9d8f;
+            --third-prize: #457b9d;
+            --no-prize: #8a7b68;
+            
+            /* 字体变量 */
+            --serif-font: 'Noto Serif SC', serif;
+            --sans-font: 'Noto Sans SC', sans-serif;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        
+        body {
+            font-family: var(--sans-font);
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .lottery-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--secondary-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        
+        /* 头部 */
+        .lottery-header {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #b89a73 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .lottery-header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.3;
+            animation: sparkle 20s linear infinite;
+        }
+        
+        @keyframes sparkle {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .logo h1 {
+            font-family: var(--serif-font);
+            font-size: 2.2rem;
+            font-weight: 300;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .lottery-title {
+            font-size: 1.8rem;
+            font-weight: 400;
+            margin-bottom: 10px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .lottery-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* 主内容区域 */
+        .lottery-content {
+            padding: 30px;
+        }
+        
+        .prizes-section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-family: var(--serif-font);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: var(--accent-color);
+        }
+        
+        .prizes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .prize-item {
+            background-color: var(--primary-bg);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .prize-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        }
+        
+        .prize-item.grand {
+            border-color: var(--grand-prize);
+        }
+        
+        .prize-item.first {
+            border-color: var(--first-prize);
+        }
+        
+        .prize-item.second {
+            border-color: var(--second-prize);
+        }
+        
+        .prize-item.third {
+            border-color: var(--third-prize);
+        }
+        
+        .prize-item.none {
+            border-color: var(--no-prize);
+        }
+        
+        .prize-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .prize-item.grand .prize-icon {
+            color: var(--grand-prize);
+        }
+        
+        .prize-item.first .prize-icon {
+            color: var(--first-prize);
+        }
+        
+        .prize-item.second .prize-icon {
+            color: var(--second-prize);
+        }
+        
+        .prize-item.third .prize-icon {
+            color: var(--third-prize);
+        }
+        
+        .prize-item.none .prize-icon {
+            color: var(--no-prize);
+        }
+        
+        .prize-name {
+            font-weight: 500;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+        
+        .prize-desc {
+            font-size: 0.85rem;
+            color: var(--light-text);
+        }
+        
+        /* 抽奖区域 */
+        .lottery-section {
+            text-align: center;
+            padding: 30px;
+            background-color: rgba(212, 185, 150, 0.1);
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .lottery-box {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .lottery-result {
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--primary-bg);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px dashed var(--border-color);
+            margin-bottom: 20px;
+        }
+        
+        .result-placeholder {
+            color: var(--light-text);
+            font-size: 1.1rem;
+        }
+        
+        .result-prize {
+            font-size: 1.8rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .result-prize.grand {
+            color: var(--grand-prize);
+        }
+        
+        .result-prize.first {
+            color: var(--first-prize);
+        }
+        
+        .result-prize.second {
+            color: var(--second-prize);
+        }
+        
+        .result-prize.third {
+            color: var(--third-prize);
+        }
+        
+        .result-prize.none {
+            color: var(--no-prize);
+        }
+        
+        .result-code {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(212, 185, 150, 0.2);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            margin-top: 10px;
+            word-break: break-all;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        
+        .lottery-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(212, 185, 150, 0.3);
+        }
+        
+        .lottery-btn:hover {
+            background-color: #c4a882;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(212, 185, 150, 0.4);
+        }
+        
+        .lottery-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .lottery-btn:disabled {
+            background-color: var(--light-text);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .lottery-btn:disabled:hover {
+            background-color: var(--light-text);
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .attempts-info {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+        
+        /* 中奖信息区域 */
+        .winning-info {
+            background-color: rgba(212, 185, 150, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .winning-info.active {
+            display: block;
+            animation: fadeIn 0.8s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .congrats-message {
+            font-size: 1.3rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .instructions {
+            background-color: var(--primary-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        .instructions h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        /* 活动规则 */
+        .rules-section {
+            margin-top: 30px;
+            padding: 25px;
+            background-color: var(--primary-bg);
+            border-radius: 15px;
+        }
+        
+        .rules-section h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .rules-section ul {
+            list-style-type: none;
+        }
+        
+        .rules-section li {
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .rules-section li::before {
+            content: "•";
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            position: absolute;
+            left: 0;
+            top: -5px;
+        }
+        
+        /* 动画效果 */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes confetti {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-color);
+            top: 0;
+            opacity: 0;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .lottery-container {
+                border-radius: 15px;
+            }
+            
+            .lottery-header {
+                padding: 20px;
+            }
+            
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+            
+            .lottery-title {
+                font-size: 1.5rem;
+            }
+            
+            .prizes-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .lottery-section {
+                padding: 20px;
+            }
+            
+            .lottery-btn {
+                padding: 14px 30px;
+                font-size: 1.1rem;
+            }
+            
+            .result-prize {
+                font-size: 1.5rem;
+            }
+            
+            .result-code {
+                font-size: 0.95rem;
+                padding: 10px 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .prizes-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .lottery-header {
+                padding: 15px;
+            }
+            
+            .logo {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .logo h1 {
+                font-size: 1.6rem;
+            }
+            
+            .lottery-title {
+                font-size: 1.3rem;
+            }
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--primary-bg);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="lottery-container">
+        <!-- 头部 -->
+        <div class="lottery-header">
+            <div class="logo">
+                <i class="fas fa-book-reader logo-icon"></i>
+                <h1>严论阅读器</h1>
+            </div>
+            <h2 class="lottery-title">感恩回馈抽奖活动</h2>
+            <p class="lottery-subtitle">感谢您对严论阅读器的支持，我们特别准备了本次抽奖活动，祝您好运！</p>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="lottery-content">
+            <!-- 奖品展示区域 -->
+            <div class="prizes-section">
+                <h3 class="section-title"><i class="fas fa-gift"></i> 活动奖品</h3>
+                <div class="prizes-grid">
+                    <div class="prize-item grand">
+                        <i class="fas fa-money-bill-wave prize-icon"></i>
+                        <div class="prize-name">50元现金红包</div>
+                        <div class="prize-desc">超级幸运大奖</div>
+                    </div>
+                    <div class="prize-item first">
+                        <i class="fas fa-money-bill-wave prize-icon"></i>
+                        <div class="prize-name">20元现金红包</div>
+                        <div class="prize-desc">一等奖</div>
+                    </div>
+                    <div class="prize-item second">
+                        <i class="fas fa-money-bill-wave prize-icon"></i>
+                        <div class="prize-name">5元现金红包</div>
+                        <div class="prize-desc">二等奖</div>
+                    </div>
+                    <div class="prize-item third">
+                        <i class="fas fa-id-card prize-icon"></i>
+                        <div class="prize-name">钰林小镇V系列会员卡</div>
+                        <div class="prize-desc">尊享会员特权</div>
+                    </div>
+                    <div class="prize-item none">
+                        <i class="fas fa-hand-holding-heart prize-icon"></i>
+                        <div class="prize-name">谢谢惠顾</div>
+                        <div class="prize-desc">感谢参与</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 抽奖区域 -->
+            <div class="lottery-section">
+                <h3 class="section-title"><i class="fas fa-dice"></i> 幸运抽奖</h3>
+                
+                <div class="lottery-box">
+                    <div class="lottery-result" id="lotteryResult">
+                        <div class="result-placeholder">点击下方按钮开始抽奖</div>
+                        <!-- 抽奖结果将动态显示在这里 -->
+                    </div>
+                    
+                    <button class="lottery-btn pulse" id="lotteryBtn">
+                        <i class="fas fa-star"></i>
+                        <span>立即抽奖</span>
+                    </button>
+                    
+                    <div class="attempts-info" id="attemptsInfo">
+                        每个设备仅限抽奖1次
+                    </div>
+                </div>
+                
+                <!-- 中奖信息区域（初始隐藏） -->
+                <div class="winning-info" id="winningInfo">
+                    <div class="congrats-message" id="congratsMessage">
+                        <!-- 恭喜信息将动态显示在这里 -->
+                    </div>
+                    
+                    <!-- 兑换码区域（仅对会员卡奖品显示） -->
+                    <div class="redemption-code" id="redemptionCode" style="display: none;">
+                        <div class="section-title"><i class="fas fa-ticket-alt"></i> 兑换码</div>
+                        <div class="result-code" id="codeDisplay">
+                            <!-- 兑换码将动态显示在这里 -->
+                        </div>
+                        
+                        <div class="instructions">
+                            <h3><i class="fas fa-info-circle"></i> 兑换方式</h3>
+                            <p>恭喜您获得【钰林小镇V系列会员卡】！</p>
+                            <p>请按以下步骤兑换：</p>
+                            <ol>
+                                <li>微信搜索"钰林小镇"微信公众号并关注</li>
+                                <li>进入公众号后台，私信联系人工客服</li>
+                                <li>提供您的兑换码进行验证</li>
+                                <li>客服将为您激活会员卡权益</li>
+                            </ol>
+                            <p style="color: var(--accent-color); margin-top: 10px;"><i class="fas fa-exclamation-circle"></i> 请妥善保管此兑换码，切勿泄露给他人</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 活动规则 -->
+            <div class="rules-section">
+                <h3><i class="fas fa-clipboard-list"></i> 活动规则</h3>
+                <ul>
+                    <li>每个设备仅限参与一次抽奖</li>
+                    <li>抽奖结果随机产生，一经抽奖不可更改</li>
+                    <li>实物奖品需根据兑换说明进行兑换</li>
+                    <li>本活动最终解释权归严论阅读器所有</li>
+                    <li>抽奖活动截止时间：2025年2月15日</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const lotteryBtn = document.getElementById('lotteryBtn');
+            const lotteryResult = document.getElementById('lotteryResult');
+            const winningInfo = document.getElementById('winningInfo');
+            const congratsMessage = document.getElementById('congratsMessage');
+            const redemptionCode = document.getElementById('redemptionCode');
+            const codeDisplay = document.getElementById('codeDisplay');
+            const attemptsInfo = document.getElementById('attemptsInfo');
+            
+            // 检查是否已经抽过奖
+            const hasDrawn = localStorage.getItem('yanlun_lottery_drawn');
+            
+            if (hasDrawn) {
+                // 已经抽过奖，显示之前的结果
+                const savedResult = JSON.parse(localStorage.getItem('yanlun_lottery_result'));
+                displayResult(savedResult);
+                lotteryBtn.disabled = true;
+                lotteryBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>已抽奖</span>';
+                lotteryBtn.classList.remove('pulse');
+                attemptsInfo.textContent = "您已参与过本次抽奖活动";
+            }
+            
+            // 绑定抽奖按钮点击事件
+            lotteryBtn.addEventListener('click', function() {
+                // 禁用按钮防止重复点击
+                lotteryBtn.disabled = true;
+                lotteryBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>抽奖中...</span>';
+                
+                // 模拟抽奖过程
+                setTimeout(() => {
+                    // 执行抽奖逻辑
+                    const result = performLottery();
+                    
+                    // 保存抽奖结果到本地存储
+                    localStorage.setItem('yanlun_lottery_drawn', 'true');
+                    localStorage.setItem('yanlun_lottery_result', JSON.stringify(result));
+                    
+                    // 显示结果
+                    displayResult(result);
+                    
+                    // 更新按钮状态
+                    lotteryBtn.innerHTML = '<i class="fas fa-check-circle"></i><span>已抽奖</span>';
+                    lotteryBtn.classList.remove('pulse');
+                    attemptsInfo.textContent = "您已参与过本次抽奖活动";
+                    
+                }, 1500); // 1.5秒延迟模拟抽奖过程
+            });
+            
+            // 执行抽奖逻辑
+            function performLottery() {
+                // 奖品列表（根据要求，不允许抽中现金红包）
+                // 设置概率：会员卡10%，谢谢惠顾90%
+                const prizes = [
+                    { name: "钰林小镇V系列会员卡", type: "third", probability: 10 },
+                    { name: "谢谢惠顾", type: "none", probability: 90 }
+                ];
+                
+                // 根据概率随机选择奖品
+                let random = Math.random() * 100;
+                let selectedPrize = null;
+                
+                for (const prize of prizes) {
+                    if (random < prize.probability) {
+                        selectedPrize = prize;
+                        break;
+                    }
+                    random -= prize.probability;
+                }
+                
+                // 如果没有选中（理论上不会发生），默认谢谢惠顾
+                if (!selectedPrize) {
+                    selectedPrize = prizes[1];
+                }
+                
+                // 生成兑换码（仅对会员卡奖品）
+                let redemptionCode = "";
+                if (selectedPrize.type === "third") {
+                    redemptionCode = generateRedemptionCode();
+                }
+                
+                return {
+                    prizeName: selectedPrize.name,
+                    prizeType: selectedPrize.type,
+                    redemptionCode: redemptionCode,
+                    timestamp: new Date().toLocaleString()
+                };
+            }
+            
+            // 生成25位兑换码
+            function generateRedemptionCode() {
+                // 前2位固定为"25"
+                let code = "25";
+                
+                // 生成15位随机数字
+                for (let i = 0; i < 15; i++) {
+                    code += Math.floor(Math.random() * 10);
+                }
+                
+                // 获取当前时间并格式化
+                const now = new Date();
+                const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份从0开始
+                const day = String(now.getDate()).padStart(2, '0');
+                const hour = String(now.getHours()).padStart(2, '0');
+                const minute = String(now.getMinutes()).padStart(2, '0');
+                
+                // 后8位为月日时分
+                code += month + day + hour + minute;
+                
+                return code;
+            }
+            
+            // 显示抽奖结果
+            function displayResult(result) {
+                // 清空结果区域
+                lotteryResult.innerHTML = '';
+                
+                // 创建奖品名称元素
+                const prizeElement = document.createElement('div');
+                prizeElement.className = `result-prize ${result.prizeType}`;
+                prizeElement.textContent = result.prizeName;
+                
+                // 添加到结果区域
+                lotteryResult.appendChild(prizeElement);
+                
+                // 如果中奖了（非谢谢惠顾），显示兑换码
+                if (result.prizeType !== "none") {
+                    const codeElement = document.createElement('div');
+                    codeElement.className = 'result-code';
+                    codeElement.textContent = result.redemptionCode;
+                    codeElement.id = 'dynamicCodeDisplay';
+                    lotteryResult.appendChild(codeElement);
+                    
+                    // 设置兑换码显示
+                    codeDisplay.textContent = result.redemptionCode;
+                }
+                
+                // 显示中奖信息区域
+                winningInfo.classList.add('active');
+                
+                // 设置恭喜信息
+                if (result.prizeType === "none") {
+                    congratsMessage.textContent = "感谢您的参与！";
+                    congratsMessage.style.color = "var(--no-prize)";
+                    redemptionCode.style.display = 'none';
+                } else {
+                    congratsMessage.textContent = "恭喜您中奖啦！";
+                    congratsMessage.style.color = "var(--third-prize)";
+                    redemptionCode.style.display = 'block';
+                    
+                    // 添加庆祝效果
+                    createConfetti();
+                }
+                
+                // 添加结果区域动画
+                lotteryResult.style.animation = 'fadeIn 0.8s ease';
+            }
+            
+            // 创建庆祝彩花效果（仅在中奖时）
+            function createConfetti() {
+                const colors = ['#d4b996', '#f4a261', '#2a9d8f', '#457b9d'];
+                const container = document.querySelector('.lottery-box');
+                
+                // 创建50个彩花
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    
+                    // 随机颜色
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.backgroundColor = color;
+                    
+                    // 随机位置和大小
+                    const size = Math.random() * 10 + 5;
+                    confetti.style.width = `${size}px`;
+                    confetti.style.height = `${size}px`;
+                    confetti.style.left = `${Math.random() * 100}%`;
+                    
+                    // 随机动画延迟和持续时间
+                    const delay = Math.random() * 1;
+                    const duration = Math.random() * 1 + 1;
+                    
+                    confetti.style.animation = `confetti ${duration}s ease ${delay}s forwards`;
+                    
+                    container.appendChild(confetti);
+                    
+                    // 动画结束后移除元素
+                    setTimeout(() => {
+                        if (confetti.parentNode) {
+                            confetti.parentNode.removeChild(confetti);
+                        }
+                    }, (delay + duration) * 1000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
